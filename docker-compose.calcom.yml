@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Cal.com
+  calcom-database:
+    image: postgres:14-alpine
+    container_name: calcom-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: calcom
+      POSTGRES_PASSWORD: calcom_password_change_me
+      POSTGRES_DB: calcom
+    volumes:
+      - calcom-db-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Use 5433 to avoid conflicts with existing PostgreSQL
+    networks:
+      - calcom-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calcom"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cal.com Application
+  calcom:
+    image: calcom/cal.com:latest
+    container_name: calcom-app
+    restart: unless-stopped
+    depends_on:
+      calcom-database:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://calcom:calcom_password_change_me@calcom-database:5432/calcom
+      
+      # Application URL (change this to your domain or keep localhost for local testing)
+      NEXT_PUBLIC_WEBAPP_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      
+      # Security Keys (generate with: openssl rand -base64 32)
+      NEXTAUTH_SECRET: change_this_to_a_random_string_generated_with_openssl
+      CALENDSO_ENCRYPTION_KEY: change_this_to_another_random_string
+      
+      # Email Configuration (optional, for notifications)
+      # EMAIL_FROM: noreply@yourdomain.com
+      # EMAIL_SERVER_HOST: smtp.gmail.com
+      # EMAIL_SERVER_PORT: 587
+      # EMAIL_SERVER_USER: your-email@gmail.com
+      # EMAIL_SERVER_PASSWORD: your-app-password
+      
+      # Timezone
+      NEXT_PUBLIC_TIMEZONE: Asia/Seoul
+      
+      # License (set to agree to AGPLv3)
+      NEXT_PUBLIC_LICENSE_CONSENT: agree
+      
+      # Disable telemetry (optional)
+      NEXT_TELEMETRY_DISABLED: 1
+      
+    ports:
+      - "3000:3000"
+    networks:
+      - calcom-network
+    volumes:
+      - calcom-app-data:/app/.next
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Prisma Studio (optional, for database management)
+  prisma-studio:
+    image: calcom/cal.com:latest
+    container_name: calcom-prisma-studio
+    restart: unless-stopped
+    depends_on:
+      - calcom-database
+    environment:
+      DATABASE_URL: postgresql://calcom:calcom_password_change_me@calcom-database:5432/calcom
+    command: npx prisma studio
+    ports:
+      - "5555:5555"
+    networks:
+      - calcom-network
+
+networks:
+  calcom-network:
+    driver: bridge
+
+volumes:
+  calcom-db-data:
+    driver: local
+  calcom-app-data:
+    driver: local

@@ -1,8 +1,8 @@
-# 🤖 Gemini-Reclaim-Automation
+# 🤖 Gemini-Cal.com-Automation
 
 **완전 무료** 회의록 자동 분석 & 스케줄 관리 시스템
 
-클로바노트 등에서 다운받은 회의록 텍스트를 AI가 자동으로 분석해서 Reclaim.ai에 태스크와 일정으로 등록해줍니다!
+클로바노트 등에서 다운받은 회의록 텍스트를 AI가 자동으로 분석해서 셀프호스팅 Cal.com에 태스크와 일정으로 등록해줍니다!
 
 ## ✨ 주요 기능
 
@@ -31,10 +31,11 @@
 4. API 키 복사
 5. **무료 한도**: 분당 15회, 하루 1,500회 요청
 
-#### Reclaim.ai API Token
-1. https://reclaim.ai 가입
-2. Settings → Integrations → API 이동
-3. API 토큰 생성 및 복사
+#### Cal.com 셀프호스팅
+1. Docker와 Docker Compose 설치
+2. `docs/CALCOM_SETUP.md` 가이드 확인
+3. Cal.com 배포 및 초기 설정
+4. API 키 생성
 
 ### 2단계: 설치
 
@@ -48,18 +49,33 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-### 3단계: API 키 설정
+### 3단계: Cal.com 설정
+
+자세한 내용은 `docs/CALCOM_SETUP.md`를 참고하세요.
+
+```bash
+# Cal.com Docker 배포
+docker compose -f docker-compose.calcom.yml up -d
+
+# 브라우저에서 http://localhost:3000 접속
+# 초기 설정 위저드 완료
+# Settings → Developer → API Keys에서 API 키 생성
+```
+
+### 4단계: API 키 설정
 
 `config/.env` 파일을 열고 API 키 입력:
 
 ```bash
 # config/.env
 GEMINI_API_KEY=your_gemini_api_key_here
-RECLAIM_API_TOKEN=your_reclaim_api_token_here
+CALCOM_API_KEY=your_calcom_api_key_here
+CALCOM_BASE_URL=http://localhost:3000
+CALCOM_USER_ID=your_user_id_here
 TIMEZONE=Asia/Seoul
 ```
 
-### 4단계: 사용하기
+### 5단계: 사용하기
 
 ```bash
 # 가상환경 활성화
@@ -80,7 +96,7 @@ python3 src/main.py
 python3 src/main.py
 ```
 
-`input/` 폴더의 모든 txt 파일을 처리하고, Reclaim.ai에 동기화합니다.
+`input/` 폴더의 모든 txt 파일을 처리하고, Cal.com에 동기화합니다.
 
 ### 감시 모드 (자동 처리)
 
@@ -96,7 +112,7 @@ python3 src/main.py --mode watch
 python3 src/main.py --no-sync
 ```
 
-회의록 분석만 수행하고 Reclaim.ai에는 등록하지 않습니다. (테스트용)
+회의록 분석만 수행하고 Cal.com에는 등록하지 않습니다. (테스트용)
 
 ### 특정 파일만 처리
 
@@ -107,16 +123,19 @@ python3 src/main.py --file input/meeting_2024.txt
 ## 📁 프로젝트 구조
 
 ```
-Gemini-Reclaim-Automation/
+Gemini-Cal.com-Automation/
 ├── config/
 │   ├── .env.example          # API 키 설정 예시
 │   └── .env                  # 실제 API 키 (git에 추가 안됨)
+├── docs/
+│   └── CALCOM_SETUP.md       # Cal.com 셀프호스팅 가이드
 ├── input/                    # 회의록 txt 파일을 넣는 곳
 ├── processed/                # 처리된 파일과 분석 결과 보관
 ├── src/
 │   ├── gemini_analyzer.py   # Gemini AI 분석 모듈
-│   ├── reclaim_client.py    # Reclaim.ai API 클라이언트
+│   ├── calcom_client.py     # Cal.com API 클라이언트
 │   └── main.py              # 메인 자동화 스크립트
+├── docker-compose.calcom.yml # Cal.com Docker 구성
 ├── requirements.txt         # Python 패키지
 ├── setup.sh                 # 자동 설정 스크립트
 └── README.md
@@ -160,8 +179,9 @@ export GEMINI_API_KEY=your_key
 python3 gemini_analyzer.py
 
 # Reclaim 연동만 테스트
-export RECLAIM_API_TOKEN=your_token
-python3 reclaim_client.py
+export CALCOM_API_KEY=your_key
+export CALCOM_BASE_URL=http://localhost:3000
+python3 calcom_client.py
 ```
 
 ### 분석 결과 확인
@@ -198,10 +218,11 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Reclaim.ai 동기화 오류
-- API 토큰이 유효한지 확인
+### Cal.com 동기화 오류
+- Cal.com이 실행 중인지 확인: `docker compose -f docker-compose.calcom.yml ps`
+- API 키가 유효한지 확인
 - 인터넷 연결 확인
-- Reclaim.ai 계정이 활성화되어 있는지 확인
+- `docs/CALCOM_SETUP.md` 문제 해결 섹션 참고
 
 ## 📝 라이선스
 

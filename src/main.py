@@ -29,7 +29,7 @@ else:
     sys.exit(1)
 
 from gemini_analyzer import GeminiAnalyzer
-from reclaim_client import ReclaimClient
+from calcom_client import CalcomClient
 
 
 class MeetingAutomation:
@@ -47,19 +47,22 @@ class MeetingAutomation:
 
         # API 클라이언트 초기화
         gemini_key = os.getenv('GEMINI_API_KEY')
-        reclaim_token = os.getenv('RECLAIM_API_TOKEN')
+        calcom_api_key = os.getenv('CALCOM_API_KEY')
+        calcom_base_url = os.getenv('CALCOM_BASE_URL', 'http://localhost:3000')
+        calcom_user_id = os.getenv('CALCOM_USER_ID')
         timezone = os.getenv('TIMEZONE', 'Asia/Seoul')
 
         if not gemini_key:
             print("❌ GEMINI_API_KEY가 설정되지 않았습니다.")
             sys.exit(1)
 
-        if not reclaim_token:
-            print("❌ RECLAIM_API_TOKEN이 설정되지 않았습니다.")
+        if not calcom_api_key:
+            print("❌ CALCOM_API_KEY가 설정되지 않았습니다.")
+            print("   docs/CALCOM_SETUP.md를 참고하여 Cal.com을 설정하세요.")
             sys.exit(1)
 
         self.analyzer = GeminiAnalyzer(gemini_key)
-        self.reclaim = ReclaimClient(reclaim_token, timezone)
+        self.calcom = CalcomClient(calcom_api_key, calcom_base_url, calcom_user_id, timezone)
 
     def get_pending_files(self):
         """처리되지 않은 txt 파일 목록 반환"""
@@ -110,12 +113,12 @@ class MeetingAutomation:
 
             print(f"\n💾 분석 결과 저장: {json_filename}")
 
-            # Reclaim.ai에 동기화
+            # Cal.com에 동기화
             sync_results = None
             if auto_sync:
-                print("\n📤 Reclaim.ai에 동기화 중...")
-                sync_results = self.reclaim.sync_meeting_analysis(analysis_result)
-                self.reclaim.print_sync_results(sync_results)
+                print("\n📤 Cal.com에 동기화 중...")
+                sync_results = self.calcom.sync_meeting_analysis(analysis_result)
+                self.calcom.print_sync_results(sync_results)
 
             # 처리된 파일 이동
             processed_filename = f"{file_path.stem}_{timestamp}.txt"
@@ -205,7 +208,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="회의록 자동 분석 및 Reclaim.ai 동기화 시스템"
+        description="회의록 자동 분석 및 Cal.com 동기화 시스템"
     )
     parser.add_argument(
         '--mode',
@@ -216,7 +219,7 @@ def main():
     parser.add_argument(
         '--no-sync',
         action='store_true',
-        help='Reclaim.ai 동기화 비활성화 (분석만 수행)'
+        help='Cal.com 동기화 비활성화 (분석만 수행)'
     )
     parser.add_argument(
         '--file',
