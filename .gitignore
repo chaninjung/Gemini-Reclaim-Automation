@@ -212,3 +212,4 @@ input/*.txt
 !input/example_meeting.txt
 processed/*
 !processed/.gitkeep
+cal-com-official/
