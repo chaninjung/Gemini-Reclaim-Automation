@@ -13,11 +13,11 @@ services:
     volumes:
       - calcom-db-data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"  # Use 5433 to avoid conflicts with existing PostgreSQL
+      - "5433:5432" # Use 5433 to avoid conflicts with existing PostgreSQL
     networks:
       - calcom-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U calcom"]
+      test: [ "CMD-SHELL", "pg_isready -U calcom" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,39 +33,39 @@ services:
     environment:
       # Database Configuration
       DATABASE_URL: postgresql://calcom:calcom_password_change_me@calcom-database:5432/calcom
-      
+
       # Application URL (change this to your domain or keep localhost for local testing)
-      NEXT_PUBLIC_WEBAPP_URL: http://localhost:3000
-      NEXTAUTH_URL: http://localhost:3000
-      
+      NEXT_PUBLIC_WEBAPP_URL: http://localhost:3001
+      NEXTAUTH_URL: http://localhost:3001
+
       # Security Keys (generate with: openssl rand -base64 32)
       NEXTAUTH_SECRET: change_this_to_a_random_string_generated_with_openssl
       CALENDSO_ENCRYPTION_KEY: change_this_to_another_random_string
-      
+
       # Email Configuration (optional, for notifications)
       # EMAIL_FROM: noreply@yourdomain.com
       # EMAIL_SERVER_HOST: smtp.gmail.com
       # EMAIL_SERVER_PORT: 587
       # EMAIL_SERVER_USER: your-email@gmail.com
       # EMAIL_SERVER_PASSWORD: your-app-password
-      
+
       # Timezone
       NEXT_PUBLIC_TIMEZONE: Asia/Seoul
-      
+
       # License (set to agree to AGPLv3)
       NEXT_PUBLIC_LICENSE_CONSENT: agree
-      
+
       # Disable telemetry (optional)
       NEXT_TELEMETRY_DISABLED: 1
-      
+
     ports:
-      - "3000:3000"
+      - "3001:3000"
     networks:
       - calcom-network
     volumes:
       - calcom-app-data:/app/.next
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/api/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -82,7 +82,7 @@ services:
       DATABASE_URL: postgresql://calcom:calcom_password_change_me@calcom-database:5432/calcom
     command: npx prisma studio
     ports:
-      - "5555:5555"
+      - "5556:5555"
     networks:
       - calcom-network
 
