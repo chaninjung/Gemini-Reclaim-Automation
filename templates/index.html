@@ -1,545 +1,1346 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 회의록 자동화 - Gemini + Cal.com</title>
+    <title>🤖 회의록 자동화 - Smart Scheduler</title>
+
+    <!-- Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+
+    <!-- Toast UI Editor -->
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+    <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
+        .fc-event {
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
+        .fc-event:hover {
+            transform: scale(1.02);
+            z-index: 50;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .toastui-editor-defaultUI {
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.5rem;
         }
 
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-
-        .main-card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .input-section {
-            margin-bottom: 30px;
-        }
-
-        .input-section label {
-            display: block;
-            font-size: 1.1em;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 300px;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1em;
+        .toastui-editor-contents {
+            font-size: 14px;
             font-family: inherit;
-            resize: vertical;
-            transition: border-color 0.3s;
         }
 
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
+        #contextMenu {
+            position: absolute;
+            z-index: 1000;
+            display: none;
         }
 
-        .options {
-            margin-bottom: 20px;
+        /* Markdown Preview Style */
+        .markdown-preview h1 {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin: 0.8em 0 0.4em 0;
         }
 
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            font-size: 1em;
+        .markdown-preview h2 {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 0.8em 0 0.4em 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 4px;
         }
 
-        .checkbox-label input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            flex: 1;
-            min-width: 150px;
-            padding: 15px 30px;
+        .markdown-preview h3 {
             font-size: 1.1em;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
+            font-weight: bold;
+            margin: 0.8em 0 0.4em 0;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .markdown-preview ul {
+            list-style: disc;
+            padding-left: 1.2em;
+            margin-bottom: 0.5em;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        .markdown-preview ol {
+            list-style: decimal;
+            padding-left: 1.2em;
+            margin-bottom: 0.5em;
         }
 
-        .btn-primary:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
+        .markdown-preview li {
+            margin-bottom: 0.2em;
         }
 
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
+        .markdown-preview p {
+            margin-bottom: 0.8em;
         }
 
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .loading.active {
-            display: block;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .results {
-            display: none;
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .results.active {
-            display: block;
-        }
-
-        .result-section {
-            margin-bottom: 20px;
-        }
-
-        .result-section h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 1.3em;
-        }
-
-        .result-item {
-            background: white;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-
-        .result-item h4 {
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        .result-item p {
-            color: #666;
-            font-size: 0.95em;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 5px;
-            font-size: 0.85em;
-            font-weight: 600;
-            margin-right: 5px;
-        }
-
-        .badge-high { background: #fee; color: #d00; }
-        .badge-medium { background: #ffa; color: #880; }
-        .badge-low { background: #efe; color: #080; }
-
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .alert-error {
-            background: #fee;
-            color: #d00;
-            border-left: 4px solid #d00;
-        }
-
-        .alert-success {
-            background: #efe;
-            color: #080;
-            border-left: 4px solid #080;
-        }
-
-        .example {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f0f7ff;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-
-        .example h4 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .example pre {
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
-            font-size: 0.9em;
+        .markdown-preview strong {
+            color: #1d4ed8;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 회의록 자동화</h1>
-            <p>Gemini AI + Cal.com 통합</p>
+
+<body class="bg-gray-100 h-screen flex flex-col" onclick="hideContextMenu()">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm h-16 flex items-center px-6 justify-between flex-shrink-0 z-10">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">🤖</span>
+            <h1 class="font-bold text-xl text-gray-800">Smart Scheduler</h1>
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Step-by-Step Workflow</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="clearStorage()" class="text-xs text-gray-400 hover:text-red-500 underline">새로 시작하기
+                (초기화)</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- Left Panel: Input & Analysis Preview -->
+        <div class="w-2/5 bg-white border-r border-gray-200 flex flex-col bg-gray-50">
+            <div class="p-6 flex-1 overflow-y-auto">
+                <h2 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <span
+                        class="bg-gray-200 text-gray-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                    <span>회의록 입력</span>
+                </h2>
+
+                <!-- Expanded Textarea -->
+                <textarea id="meetingNotes"
+                    class="w-full h-[500px] p-5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm leading-relaxed shadow-sm mb-4 font-mono"
+                    placeholder="여기에 회의록을 붙여넣으세요..."></textarea>
+
+                <div class="flex justify-end gap-2 border-b border-gray-200 pb-6 mb-6">
+                    <button onclick="document.getElementById('meetingNotes').value=''"
+                        class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">지우기</button>
+                    <button onclick="analyzeNotes()" id="analyzeBtn"
+                        class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2">
+                        <span>🚀 1차 분석 시작</span>
+                    </button>
+                </div>
+
+                <!-- Analysis Preview Stage -->
+                <div id="previewStage" class="hidden pb-10">
+                    <!-- Dynamic Content Area -->
+                    <div id="summaryPreview" class="w-full"></div>
+
+                    <!-- Action Button Area -->
+                    <div class="flex flex-col gap-2 mt-8 pt-6 border-t border-gray-100">
+                        <p class="text-xs text-gray-500 mb-2 text-center">👇 이 내용을 바탕으로 스케줄을 생성하시겠습니까?</p>
+                        <button onclick="applyToCalendar()"
+                            class="w-full py-3 bg-purple-600 text-white text-sm font-bold rounded-lg hover:bg-purple-700 transition-colors shadow-md flex items-center justify-center gap-2">
+                            <span>📅 4. 캘린더/스케줄러에 반영하기</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="hidden mt-12 text-center">
+                    <div
+                        class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent">
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500 animate-pulse">LLM이 회의록을 분석하고 있습니다...</p>
+                </div>
+            </div>
         </div>
 
-        <div class="main-card">
-            <form id="meetingForm">
-                <div class="input-section">
-                    <label for="meeting_notes">📝 회의록 입력</label>
-                    <textarea
-                        id="meeting_notes"
-                        name="meeting_notes"
-                        placeholder="여기에 회의록 텍스트를 붙여넣거나 입력하세요...
-
-예시:
-회의 제목: 2024년 1월 프로젝트 회의
-날짜: 2024-01-22
-참석자: 김철수, 박영희
-
-완료한 작업:
-- 백엔드 API 개발 완료 (김철수)
-
-해야 할 일:
-- 프론트엔드 개발 시작 (박영희) - 마감: 2024-01-26
-- API 테스트 (김철수) - 높은 우선순위
-
-다음 미팅:
-- 날짜: 2024-01-29
-- 시간: 오후 2시
-- 예상 시간: 1시간"
-                    ></textarea>
+        <!-- Right Panel: Calendar -->
+        <div class="w-3/5 bg-white p-6 overflow-hidden flex flex-col border-l-4 border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <span
+                            class="bg-purple-100 text-purple-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">5</span>
+                        <span>업무 캘린더</span>
+                    </h2>
                 </div>
 
-                <div class="options">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="auto_sync" name="auto_sync" checked>
-                        <span>📅 Cal.com에 자동으로 등록하기</span>
-                    </label>
-                </div>
-
-                <div class="button-group">
-                    <button type="submit" class="btn-primary" id="analyzeBtn">
-                        🚀 분석 및 등록하기
-                    </button>
-                    <button type="button" class="btn-secondary" onclick="clearForm()">
-                        🔄 초기화
-                    </button>
-                </div>
-            </form>
-
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Gemini AI로 회의록 분석 중...</p>
+                <button onclick="syncToCalcom()" id="syncBtn"
+                    class="px-6 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-md flex items-center gap-2 opacity-50 cursor-not-allowed"
+                    disabled>
+                    <span>🚀 최종 완료 (Cal.com 등록)</span>
+                </button>
             </div>
 
-            <div class="results" id="results"></div>
+            <div id="syncResultConfig"
+                class="mb-4 bg-green-50 rounded border border-green-100 p-3 text-xs text-green-900 hidden flex justify-between items-center">
+                <span id="syncResultText"></span>
+                <button onclick="this.parentElement.classList.add('hidden')"
+                    class="text-green-700 hover:text-green-900">✕</button>
+            </div>
 
-            <div class="example">
-                <h4>💡 작성 팁</h4>
-                <p>분석 정확도를 높이려면 다음 형식을 참고하세요:</p>
-                <pre>회의 제목: [제목]
-날짜: YYYY-MM-DD
-참석자: [이름1, 이름2, ...]
+            <div class="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden text-sm relative">
+                <div id='calendar' class="h-full"></div>
+            </div>
 
-완료한 작업:
-- [작업 내용] (담당자)
+            <div class="mt-3 flex gap-2 text-xs justify-end items-center">
+                <!-- Interactive Legend / Filters -->
+                <button onclick="toggleFilter('summary')" id="filter-summary"
+                    class="filter-btn active px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100 font-medium hover:bg-purple-100 transition-all flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-purple-500"></span> 회의록 요약
+                </button>
+                <button onclick="toggleFilter('task')" id="filter-task"
+                    class="filter-btn active px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium hover:bg-blue-100 transition-all flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> 태스크
+                </button>
+                <button onclick="toggleFilter('meeting')" id="filter-meeting"
+                    class="filter-btn active px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-100 font-medium hover:bg-green-100 transition-all flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 미팅
+                </button>
+            </div>
+        </div>
 
-해야 할 일:
-- [작업 내용] (담당자) - 마감: YYYY-MM-DD
-- [작업 내용] - 높은/중간/낮은 우선순위
+    </main>
+    <style>
+        /* Notion-like Summary Preview Styling (Modal & Preview) */
+        .prose {
+            color: #37352f;
+            line-height: 1.6;
+            font-size: 15px;
+        }
 
-다음 미팅:
-- 날짜: YYYY-MM-DD
-- 시간: HH:MM
-- 장소: [장소]
+        .prose h1 {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            color: #111827;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.3em;
+        }
 
-주요 결정사항:
-- [결정사항1]
-- [결정사항2]</pre>
+        .prose h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+            color: #1f2937;
+        }
+
+        .prose h3 {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            color: #374151;
+        }
+
+        .prose strong {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        .prose ol {
+            list-style-type: decimal;
+            padding-left: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        .prose li {
+            margin-bottom: 0.25em;
+        }
+
+        .prose p {
+            margin-bottom: 1em;
+        }
+
+        .prose blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1em;
+            color: #6b7280;
+            font-style: italic;
+            margin-bottom: 1em;
+        }
+
+        #summaryPreview {
+            /* Apply styling to preview as well - duplicating prose styles for compatibility */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #37352f;
+            line-height: 1.6;
+        }
+
+        #summaryPreview h1 {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            color: #111827;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.3em;
+        }
+
+        #summaryPreview h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+            color: #1f2937;
+        }
+
+        #summaryPreview h3 {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            color: #374151;
+        }
+
+        #summaryPreview ul {
+            list-style-type: disc;
+            padding-left: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        #summaryPreview li {
+            margin-bottom: 0.25em;
+        }
+
+        #summaryPreview p {
+            margin-bottom: 1em;
+        }
+
+        #summaryPreview blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1em;
+            color: #6b7280;
+            font-style: italic;
+            margin-bottom: 1em;
+        }
+
+        /* Filter Styles for Calendar Events */
+        .calendar-filtered-summary .event-type-summary {
+            display: none !important;
+        }
+
+        .calendar-filtered-task .event-type-task {
+            display: none !important;
+        }
+
+        .calendar-filtered-meeting .event-type-meeting {
+            display: none !important;
+        }
+
+        /* Button Inactive State */
+        .filter-btn.inactive {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            border-color: #e5e7eb;
+        }
+
+        .filter-btn.inactive span {
+            background-color: #d1d5db;
+        }
+
+        /* Modal Context Styling */
+        .context-block {
+            background-color: #f9fafb;
+            border-left: 3px solid #d1d5db;
+            padding: 0.75rem 1rem;
+            margin-top: 1rem;
+            border-radius: 0 0.375rem 0.375rem 0;
+            font-size: 0.9em;
+            color: #4b5563;
+        }
+
+        .context-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.25rem;
+            display: block;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            letter-spacing: 0.05em;
+        }
+
+        .context-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.25rem;
+            display: block;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            letter-spacing: 0.05em;
+        }
+    </style>
+
+    .filter-btn.inactive span {
+    background-color: #d1d5db;
+    }
+    </style>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-32">
+        <button onclick="onClickContextEdit()"
+            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">✏️ 편집하기</button>
+        <button onclick="onClickContextDelete()"
+            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">🗑️ 삭제하기</button>
+    </div>
+
+    <!-- Read-Only Event View Modal (Widened) -->
+    <div id="viewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-2xl w-[800px] flex flex-col overflow-hidden max-h-[85vh]">
+            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-start bg-gray-50">
+                <div>
+                    <h3 id="viewEventTitle" class="text-2xl font-bold text-gray-800 leading-snug"></h3>
+                    <p id="viewEventTime" class="text-base text-gray-500 mt-1 font-medium"></p>
+                </div>
+                <button onclick="closeModal()"
+                    class="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-200 rounded">✕</button>
+            </div>
+
+            <div class="flex-1 p-8 overflow-y-auto bg-white custom-scrollbar">
+                <div id="viewEventDesc" class="prose max-w-none text-gray-700 leading-relaxed"></div>
+            </div>
+
+            <div class="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                <button onclick="closeModal()"
+                    class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">닫기</button>
+                <button onclick="editFromViewModal()"
+                    class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold shadow-sm flex items-center gap-2 transition-colors">
+                    <span>✏️ 수정하기</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Event Edit Modal (WYSIWYG) -->
+    <div id="eventModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-2xl w-[900px] h-[85vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-800">일정 편집</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+
+            <div class="flex-1 flex flex-col p-6 overflow-hidden bg-white">
+                <input type="hidden" id="editEventId">
+
+                <div class="grid grid-cols-12 gap-4 mb-4">
+                    <div class="col-span-12">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">제목</label>
+                        <input type="text" id="editEventTitle"
+                            class="w-full text-lg font-bold border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="제목 없음">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">시작 시간</label>
+                        <input type="datetime-local" id="editEventStart"
+                            class="w-full text-sm border border-gray-300 rounded px-3 py-2 bg-gray-50 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">종료 시간</label>
+                        <input type="datetime-local" id="editEventEnd"
+                            class="w-full text-sm border border-gray-300 rounded px-3 py-2 bg-gray-50 outline-none">
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col min-h-0 border border-t border-gray-200 pt-2">
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">상세 내용 (WYSIWYG)</label>
+                    <div id="editor" class="flex-1"></div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                <button onclick="deleteEvent()"
+                    class="text-red-500 text-sm hover:text-red-700 font-medium px-2">삭제하기</button>
+                <div class="flex gap-3">
+                    <button onclick="closeModal()"
+                        class="px-5 py-2 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium">취소</button>
+                    <button onclick="saveEventChanges()"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold shadow-sm">저장하기</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const form = document.getElementById('meetingForm');
-        const loading = document.getElementById('loading');
-        const results = document.getElementById('results');
-        const analyzeBtn = document.getElementById('analyzeBtn');
+        let calendar;
+        let editor;
+        const STORAGE_KEY_EVENTS = 'smart_scheduler_events';
+        const STORAGE_KEY_NOTES = 'smart_scheduler_notes';
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // 중요: 단계별 데이터 흐름을 위한 임시 저장소
+        let tempAnalysisResult = null;
 
-            const meetingNotes = document.getElementById('meeting_notes').value.trim();
-            const autoSync = document.getElementById('auto_sync').checked;
+        let activeEvent = null;
+        let contextEvent = null;
 
-            if (!meetingNotes) {
-                alert('회의록 내용을 입력해주세요.');
-                return;
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedNotes = localStorage.getItem(STORAGE_KEY_NOTES);
+            if (savedNotes) document.getElementById('meetingNotes').value = savedNotes;
+
+            editor = new toastui.Editor({
+                el: document.querySelector('#editor'),
+                height: '100%',
+                initialEditType: 'wysiwyg',
+                previewStyle: 'vertical'
+            });
+
+            var calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                views: {
+                    dayGridMonth: {
+                        displayEventTime: false
+                    }
+                },
+                locale: 'ko',
+                slotMinTime: '08:00:00',
+                slotMaxTime: '22:00:00',
+                allDaySlot: false,
+                nowIndicator: true,
+                height: '100%',
+                expandRows: true,
+                editable: true,
+                droppable: true,
+                selectable: true,
+                events: JSON.parse(localStorage.getItem(STORAGE_KEY_EVENTS) || '[]'),
+
+                eventDidMount: function (info) {
+                    info.el.addEventListener('contextmenu', function (e) {
+                        e.preventDefault();
+                        showContextMenu(e, info.event);
+                    });
+
+                    let tipContent = info.event.extendedProps.description || '';
+                    if (tipContent.length > 200) tipContent = tipContent.substring(0, 200) + '...';
+
+                    tippy(info.el, {
+                        content: `<div class="text-xs p-1 max-w-xs overflow-hidden"><strong class="block text-sm mb-1">${info.event.title}</strong><p class="text-gray-300 italic text-[10px]">우클릭하여 수정/삭제</p></div>`,
+                        allowHTML: true,
+                        theme: 'translucent',
+                        placement: 'auto',
+                    });
+                },
+
+                eventDrop: function () { saveEventsToStorage(); },
+                eventResize: function () { saveEventsToStorage(); },
+                eventClick: function (info) { showReadOnlyModal(info); }
+            });
+            calendar.render();
+
+            // 캘린더에 이벤트가 있으면 등록 버튼 활성화
+            checkSyncButtonState();
+
+            document.getElementById('meetingNotes').addEventListener('input', function (e) {
+                localStorage.setItem(STORAGE_KEY_NOTES, e.target.value);
+            });
+        });
+
+        // --- Context Menu ---
+        function showContextMenu(e, event) {
+            contextEvent = event;
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+        }
+
+        function hideContextMenu() { document.getElementById('contextMenu').style.display = 'none'; }
+
+        function onClickContextEdit() {
+            if (contextEvent) openEditModal(contextEvent);
+            hideContextMenu();
+        }
+
+        function onClickContextDelete() {
+            if (contextEvent && confirm('삭제하시겠습니까?')) {
+                contextEvent.remove();
+                saveEventsToStorage();
+                checkSyncButtonState();
             }
+            hideContextMenu();
+        }
 
-            // UI 업데이트
-            analyzeBtn.disabled = true;
-            loading.classList.add('active');
-            results.classList.remove('active');
+        // --- Modal ---
+        function openEditModal(event) {
+            activeEvent = event;
+            document.getElementById('editEventId').value = event.id;
+            document.getElementById('editEventTitle').value = event.title;
+
+            const toLocalISO = (date) => {
+                const tzOffset = date.getTimezoneOffset() * 60000;
+                return (new Date(date - tzOffset)).toISOString().slice(0, 16);
+            };
+
+            document.getElementById('editEventStart').value = toLocalISO(event.start);
+            document.getElementById('editEventEnd').value = event.end ? toLocalISO(event.end) : toLocalISO(new Date(event.start.getTime() + 3600000));
+            editor.setMarkdown(event.extendedProps.description || '');
+            document.getElementById('eventModal').classList.remove('hidden');
+            setTimeout(() => editor.refresh(), 100);
+        }
+
+        function closeModal() { document.getElementById('eventModal').classList.add('hidden'); activeEvent = null; }
+
+        function saveEventChanges() {
+            if (activeEvent) {
+                const newTitle = document.getElementById('editEventTitle').value;
+                const newDesc = editor.getMarkdown();
+                const newStart = new Date(document.getElementById('editEventStart').value);
+                const newEnd = new Date(document.getElementById('editEventEnd').value);
+
+                activeEvent.setProp('title', newTitle);
+                activeEvent.setExtendedProp('description', newDesc);
+                activeEvent.setStart(newStart);
+                activeEvent.setEnd(newEnd);
+
+                saveEventsToStorage();
+                closeModal();
+                calendar.gotoDate(newStart);
+            }
+        }
+
+        function deleteEvent() {
+            if (activeEvent && confirm('삭제하시겠습니까?')) {
+                activeEvent.remove();
+                saveEventsToStorage();
+                checkSyncButtonState();
+                closeModal();
+            }
+        }
+
+        function saveEventsToStorage() {
+            const events = calendar.getEvents().map(e => ({
+                id: e.id,
+                title: e.title,
+                start: e.startStr,
+                end: e.endStr,
+                color: e.backgroundColor,
+                extendedProps: e.extendedProps
+            }));
+            localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(events));
+            checkSyncButtonState();
+        }
+
+        function checkSyncButtonState() {
+            const btn = document.getElementById('syncBtn');
+            const hasEvents = calendar.getEvents().length > 0;
+            if (hasEvents) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function clearStorage() {
+            if (confirm('모든 데이터를 초기화하고 새로 시작하시겠습니까?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // --- STEP 1: Analyze ---
+        async function analyzeNotes() {
+            const notes = document.getElementById('meetingNotes').value;
+            if (!notes.trim()) { alert('내용을 입력해주세요.'); return; }
+
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('previewStage').classList.add('hidden');
 
             try {
-                const formData = new FormData();
-                formData.append('meeting_notes', meetingNotes);
-                formData.append('auto_sync', autoSync);
-
                 const response = await fetch('/analyze', {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `meeting_notes=${encodeURIComponent(notes)}&auto_sync=false`
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    displayResults(data);
+                    tempAnalysisResult = data.analysis;
+                    document.getElementById('previewStage').classList.remove('hidden');
+                    renderStagingArea(data.analysis);
                 } else {
-                    displayError(data.error || '분석 중 오류가 발생했습니다.');
+                    alert('오류: ' + data.error);
                 }
+
             } catch (error) {
-                displayError('서버와 통신 중 오류가 발생했습니다: ' + error.message);
+                alert('서버 오류: ' + error);
             } finally {
-                loading.classList.remove('active');
-                analyzeBtn.disabled = false;
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('analyzeBtn').disabled = false;
             }
-        });
-
-        function displayResults(data) {
-            const analysis = data.analysis;
-            const syncResults = data.sync_results;
-
-            let html = '';
-
-            // 성공 메시지
-            html += '<div class="alert alert-success">';
-            html += '✅ 회의록 분석이 완료되었습니다!';
-            if (data.auto_sync_enabled && syncResults) {
-                const total = syncResults.tasks_created.length + syncResults.events_created.length;
-                html += ` ${total}개 항목이 Cal.com에 등록되었습니다.`;
-            }
-            html += '</div>';
-
-            // 요약
-            if (analysis.summary) {
-                html += '<div class="result-section">';
-                html += '<h3>📋 전체 요약</h3>';
-                html += `<div class="result-item"><p>${analysis.summary}</p></div>`;
-                html += '</div>';
-            }
-
-            // 참석자
-            if (analysis.participants && analysis.participants.length > 0) {
-                html += '<div class="result-section">';
-                html += '<h3>👥 참석자</h3>';
-                html += '<div class="result-item">';
-                html += '<p>' + analysis.participants.join(', ') + '</p>';
-                html += '</div>';
-                html += '</div>';
-            }
-
-            // 주요 결정사항
-            if (analysis.key_decisions && analysis.key_decisions.length > 0) {
-                html += '<div class="result-section">';
-                html += '<h3>✅ 주요 결정사항</h3>';
-                analysis.key_decisions.forEach(decision => {
-                    html += '<div class="result-item">';
-                    html += `<p>${decision}</p>`;
-                    html += '</div>';
-                });
-                html += '</div>';
-            }
-
-            // 완료된 작업
-            if (analysis.completed_tasks && analysis.completed_tasks.length > 0) {
-                html += '<div class="result-section">';
-                html += '<h3>✔️ 완료된 작업</h3>';
-                analysis.completed_tasks.forEach(task => {
-                    html += '<div class="result-item">';
-                    html += `<h4>${task.title}</h4>`;
-                    if (task.who) html += `<p>담당자: ${task.who}</p>`;
-                    if (task.description) html += `<p>${task.description}</p>`;
-                    html += '</div>';
-                });
-                html += '</div>';
-            }
-
-            // 해야 할 작업
-            if (analysis.todo_tasks && analysis.todo_tasks.length > 0) {
-                html += '<div class="result-section">';
-                html += '<h3>📌 해야 할 작업</h3>';
-                analysis.todo_tasks.forEach(task => {
-                    html += '<div class="result-item">';
-
-                    const priorityClass = `badge-${task.priority || 'medium'}`;
-                    const priorityText = { high: '높음', medium: '중간', low: '낮음' }[task.priority || 'medium'];
-
-                    html += `<span class="badge ${priorityClass}">${priorityText}</span>`;
-                    html += `<h4>${task.title}</h4>`;
-                    if (task.who) html += `<p>담당자: ${task.who}</p>`;
-                    if (task.deadline) html += `<p>마감: ${task.deadline}</p>`;
-                    if (task.description) html += `<p>${task.description}</p>`;
-                    html += '</div>';
-                });
-                html += '</div>';
-            }
-
-            // 예정된 일정
-            if (analysis.schedule_items && analysis.schedule_items.length > 0) {
-                html += '<div class="result-section">';
-                html += '<h3>📅 예정된 일정</h3>';
-                analysis.schedule_items.forEach(item => {
-                    html += '<div class="result-item">';
-                    html += `<h4>${item.title}</h4>`;
-                    if (item.date) html += `<p>날짜: ${item.date}</p>`;
-                    if (item.time) html += `<p>시간: ${item.time}</p>`;
-                    if (item.duration_minutes) html += `<p>소요 시간: ${item.duration_minutes}분</p>`;
-                    if (item.description) html += `<p>${item.description}</p>`;
-                    html += '</div>';
-                });
-                html += '</div>';
-            }
-
-            // Cal.com 동기화 결과
-            if (syncResults && data.auto_sync_enabled) {
-                html += '<div class="result-section">';
-                html += '<h3>📤 Cal.com 동기화 결과</h3>';
-
-                if (syncResults.tasks_created.length > 0) {
-                    html += '<div class="result-item">';
-                    html += `<h4>✅ 생성된 태스크 (${syncResults.tasks_created.length}개)</h4>`;
-                    html += '<ul>';
-                    syncResults.tasks_created.forEach(msg => {
-                        html += `<li>${msg}</li>`;
-                    });
-                    html += '</ul>';
-                    html += '</div>';
-                }
-
-                if (syncResults.events_created.length > 0) {
-                    html += '<div class="result-item">';
-                    html += `<h4>📅 생성된 이벤트 (${syncResults.events_created.length}개)</h4>`;
-                    html += '<ul>';
-                    syncResults.events_created.forEach(msg => {
-                        html += `<li>${msg}</li>`;
-                    });
-                    html += '</ul>';
-                    html += '</div>';
-                }
-
-                if (syncResults.errors.length > 0) {
-                    html += '<div class="result-item">';
-                    html += `<h4>⚠️ 오류 (${syncResults.errors.length}개)</h4>`;
-                    html += '<ul>';
-                    syncResults.errors.forEach(msg => {
-                        html += `<li>${msg}</li>`;
-                    });
-                    html += '</ul>';
-                    html += '</div>';
-                }
-
-                html += '</div>';
-            }
-
-            results.innerHTML = html;
-            results.classList.add('active');
-            results.scrollIntoView({ behavior: 'smooth' });
         }
 
-        function displayError(message) {
-            results.innerHTML = `
-                <div class="alert alert-error">
-                    ❌ ${message}
+        // --- Staging Area Rendering ---
+        // --- Staging Area Rendering (Refined & Clean UI) ---
+        function renderStagingArea(analysis) {
+            const container = document.getElementById('summaryPreview');
+            container.innerHTML = ''; // Clear previous
+
+            // 1. Summary Section (Step 2: Meeting Summary)
+            // Full width to match input area, clean simple header.
+            const summaryHTML = `
+                <div class="mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold">2</span>
+                         <h3 class="text-lg font-bold text-gray-800">회의록 요약 (Summary)</h3>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden group hover:shadow-md transition-shadow duration-300">
+                        <div class="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                             <label class="flex items-center space-x-2 cursor-pointer select-none">
+                                <input type="checkbox" id="checkSummary" checked class="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 border-gray-300">
+                                <span class="font-semibold text-gray-700">캘린더 설명에 포함</span>
+                            </label>
+                            <span class="text-xs text-gray-400">Markdown Supported</span>
+                        </div>
+                        <div class="p-0">
+                            <textarea id="editSummary" 
+                                class="w-full h-[400px] p-5 border-none text-sm leading-relaxed text-gray-700 placeholder-gray-400 focus:ring-0 focus:outline-none resize-y bg-white font-mono"
+                                placeholder="요약 내용이 여기에 표시됩니다...">${analysis.summary}</textarea>
+                        </div>
+                    </div>
                 </div>
             `;
-            results.classList.add('active');
+            container.innerHTML += summaryHTML;
+
+            // Default Scheduling Logic (Tomorrow 9 AM start)
+            let baseDate = new Date();
+            baseDate.setDate(baseDate.getDate() + 1);
+            baseDate.setHours(9, 0, 0, 0);
+
+            // Container for Step 3: Tasks & Meetings (Combined)
+            let step3HTML = `
+                <div class="mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold">3</span>
+                         <h3 class="text-lg font-bold text-gray-800">태스크 & 미팅 (Tasks & Meetings)</h3>
+                    </div>
+                    <div class="space-y-6">
+            `;
+
+            // 2. Tasks Section (Inside Step 3)
+            if (analysis.todo_tasks && analysis.todo_tasks.length > 0) {
+                step3HTML += `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="px-5 py-3 border-b border-gray-50 bg-blue-50/30 flex items-center gap-2">
+                            <span class="text-blue-600 font-bold text-sm">Tasks</span>
+                            <span class="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">${analysis.todo_tasks.length}</span>
+                        </div>
+                        <div class="divide-y divide-gray-100">
+                `;
+
+                analysis.todo_tasks.forEach((task, idx) => {
+                    // Logic: Auto-increment time for each task
+                    let taskDate = new Date(baseDate);
+                    taskDate.setHours(baseDate.getHours() + idx);
+                    if (taskDate.getHours() >= 18) {
+                        taskDate.setDate(taskDate.getDate() + 1);
+                        taskDate.setHours(9 + (idx % 9), 0, 0);
+                    }
+                    const yyyy = taskDate.getFullYear();
+                    const mm = String(taskDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(taskDate.getDate()).padStart(2, '0');
+                    const dateStr = `${yyyy}-${mm}-${dd}`;
+                    const timeStr = String(taskDate.getHours()).padStart(2, '0') + ':00';
+
+                    step3HTML += `
+                        <div class="p-5 hover:bg-gray-50 transition-colors group">
+                            <div class="flex items-start gap-3">
+                                <div class="pt-1">
+                                    <input type="checkbox" id="checkTask_${idx}" checked class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <!-- Content (Title & Desc) -->
+                                    <div class="flex flex-col gap-1 mb-2">
+                                        <input type="text" id="valTaskTitle_${idx}" value="${task.title}" 
+                                            class="w-full font-bold text-gray-800 text-base bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300 group-hover:text-blue-700 transition-colors" placeholder="태스크 제목">
+                                        <input type="text" id="valTaskDesc_${idx}" value="${task.description}" 
+                                            class="w-full text-sm text-gray-500 bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300 resize-none" placeholder="상세 내용">
+                                        <input type="hidden" id="valTaskContext_${idx}" value="${task.context || ''}">
+                                        <input type="hidden" id="valTaskTime_${idx}" value="${timeStr}">
+                                    </div>
+                                    
+                                    <!-- Date Control (Aligned Right Below Content) -->
+                                    <div class="flex justify-end pt-2 border-t border-gray-50 border-dashed mt-1">
+                                         <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-400 font-medium">Date:</span>
+                                            <input type="date" id="valTaskDate_${idx}" value="${dateStr}" 
+                                                class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-600 font-mono focus:border-blue-300 focus:ring-1 focus:ring-blue-200 transition-all cursor-pointer hover:border-gray-300">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                step3HTML += `</div></div>`;
+            }
+
+            // 3. Meetings Section (Inside Step 3)
+            if (analysis.schedule_items && analysis.schedule_items.length > 0) {
+                step3HTML += `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="px-5 py-3 border-b border-gray-50 bg-green-50/30 flex items-center gap-2">
+                            <span class="text-green-600 font-bold text-sm">Meetings</span>
+                            <span class="bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded-full">${analysis.schedule_items.length}</span>
+                        </div>
+                        <div class="divide-y divide-gray-100">
+                `;
+                analysis.schedule_items.forEach((item, idx) => {
+                    step3HTML += `
+                         <div class="p-5 hover:bg-gray-50 transition-colors group">
+                            <div class="flex items-start gap-3">
+                                <div class="pt-1">
+                                    <input type="checkbox" id="checkSched_${idx}" checked class="w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <!-- Content (Title & Desc) -->
+                                    <div class="flex flex-col gap-1 mb-2">
+                                        <input type="text" id="valSchedTitle_${idx}" value="${item.title}" 
+                                             class="w-full font-bold text-gray-800 text-base bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300 group-hover:text-green-700 transition-colors" placeholder="미팅 제목">
+                                        <input type="text" id="valSchedDesc_${idx}" value="${item.description}" 
+                                            class="w-full text-sm text-gray-500 bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="상세 내용">
+                                        <input type="hidden" id="valSchedContext_${idx}" value="${item.context || ''}">
+                                        <input type="hidden" id="valSchedTime_${idx}" value="${item.time}">
+                                    </div>
+                                    
+                                     <!-- Date Control (Aligned Right Below Content) -->
+                                    <div class="flex justify-end pt-2 border-t border-gray-50 border-dashed mt-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-400 font-medium">Date:</span>
+                                            <input type="date" id="valSchedDate_${idx}" value="${item.date}" 
+                                                class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-600 font-mono focus:border-green-300 focus:ring-1 focus:ring-green-200 transition-all cursor-pointer hover:border-gray-300">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                step3HTML += `</div></div>`;
+            }
+
+            step3HTML += `</div></div>`; // Close Step 3 container
+            container.innerHTML += step3HTML;
         }
 
-        function clearForm() {
-            document.getElementById('meeting_notes').value = '';
-            results.classList.remove('active');
+        // --- STEP 2: Apply to Calendar (No Confirmation) ---
+        function applyToCalendar() {
+            if (!tempAnalysisResult) {
+                alert("분석된 내용이 없습니다.");
+                return;
+            }
+
+            // Collect Data from Staging Area
+            const finalData = { ...tempAnalysisResult }; // Clone base structure
+
+            // 1. Summary
+            const summaryCheck = document.getElementById('checkSummary');
+            if (summaryCheck && summaryCheck.checked) {
+                finalData.summary = document.getElementById('editSummary').value;
+                finalData.includeSummary = true;
+            } else {
+                finalData.includeSummary = false;
+            }
+
+            // 2. Tasks
+            finalData.todo_tasks = [];
+            if (tempAnalysisResult.todo_tasks) {
+                tempAnalysisResult.todo_tasks.forEach((_, idx) => {
+                    const chk = document.getElementById(`checkTask_${idx}`);
+                    if (chk && chk.checked) {
+                        const baseTitle = document.getElementById(`valTaskTitle_${idx}`).value;
+                        const baseDesc = document.getElementById(`valTaskDesc_${idx}`).value;
+                        const context = document.getElementById(`valTaskContext_${idx}`).value;
+
+                        // Append context to description if exists
+                        const fullDesc = context ? `${baseDesc}\n\n[Context]\n${context}` : baseDesc;
+
+                        finalData.todo_tasks.push({
+                            title: baseTitle,
+                            description: fullDesc,
+                            date: document.getElementById(`valTaskDate_${idx}`).value,
+                            time: document.getElementById(`valTaskTime_${idx}`).value
+                        });
+                    }
+                });
+            }
+
+            // 3. Schedules
+            finalData.schedule_items = [];
+            if (tempAnalysisResult.schedule_items) {
+                tempAnalysisResult.schedule_items.forEach((_, idx) => {
+                    const chk = document.getElementById(`checkSched_${idx}`);
+                    if (chk && chk.checked) {
+                        const baseTitle = document.getElementById(`valSchedTitle_${idx}`).value;
+                        const baseDesc = document.getElementById(`valSchedDesc_${idx}`).value;
+                        const context = document.getElementById(`valSchedContext_${idx}`).value;
+                        // Append context to description if exists
+                        const fullDesc = context ? `${baseDesc}\n\n[Context]\n${context}` : baseDesc;
+
+                        finalData.schedule_items.push({
+                            title: baseTitle,
+                            date: document.getElementById(`valSchedDate_${idx}`).value,
+                            time: document.getElementById(`valSchedTime_${idx}`).value,
+                            description: fullDesc,
+                            duration_minutes: 60
+                        });
+                    }
+                });
+            }
+
+            // Validation
+            if (!finalData.includeSummary && finalData.todo_tasks.length === 0 && finalData.schedule_items.length === 0) {
+                alert("선택된 항목이 없습니다. 캘린더에 추가할 항목을 체크해주세요.");
+                return;
+            }
+
+            // Direct Apply (No Confirm Dialog)
+            visualizeCalendarV3(finalData);
+            document.getElementById('previewStage').classList.add('hidden'); // Clear staging
+
+            // Show subtle feedback
+            const btn = document.querySelector('button[onclick="applyToCalendar()"]');
+            const originalText = btn.innerHTML;
+            btn.innerText = "✅ 반영되었습니다!";
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+            }, 2000);
+        }
+
+        // --- STEP 3: Sync ---
+        async function syncToCalcom() {
+            const events = calendar.getEvents().map(e => ({
+                title: e.title,
+                start: e.startStr,
+                end: e.endStr,
+                description: e.extendedProps.description
+            }));
+
+            if (events.length === 0) return;
+
+            const btn = document.getElementById('syncBtn');
+            const resultDiv = document.getElementById('syncResultConfig');
+            const resultMsg = document.getElementById('syncResultText');
+
+            const origText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳ 저장 중...</span>';
+            resultDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch('/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ calendar_events: events })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const count = (data.sync_results.tasks_created?.length || 0) + (data.sync_results.events_created?.length || 0);
+                    resultMsg.innerText = `✅ Cal.com에 ${count}건 등록 완료!`;
+                    resultDiv.classList.remove('hidden');
+                } else {
+                    alert('오류: ' + data.error);
+                }
+
+            } catch (error) {
+                alert('서버 오류: ' + error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origText;
+            }
+        }
+
+        function visualizeCalendar(analysis) {
+            // 이번에는 removeAllEvents()를 호출하지 않고 추가(Add) 모드로 갈 수도 있지만,
+            // 사용자가 "새 분석"을 했다면 보통 리셋을 원할 수 있음. 
+            // 하지만 사용자가 "기존 일정 유지"를 원할 수도 있으니 removeAllEvents는 선택적이어야 하는데,
+            // 일단은 깔끔한 workflow를 위해 기존 일정 유지하며 추가. (사용자가 원하면 전체삭제 버튼 쓰면 됨)
+
+            // 1. 회의록 요약 이벤트
+            let meetingDate = new Date();
+            meetingDate.setHours(new Date().getHours() + 1, 0, 0, 0);
+
+            const patterns = [/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/, /(\d{4})\.(\d{1,2})\.(\d{1,2})/, /(\d{4})-(\d{1,2})-(\d{1,2})/];
+            for (let pattern of patterns) {
+                const match = analysis.summary.match(pattern);
+                if (match) {
+                    meetingDate = new Date(match[1], match[2] - 1, match[3]);
+                    meetingDate.setHours(10, 0, 0, 0);
+                    break;
+                }
+            }
+            let summaryEnd = new Date(meetingDate);
+            summaryEnd.setHours(summaryEnd.getHours() + 1);
+            let summaryTitle = analysis.meeting_title || `📝 회의록 요약`;
+            let metaHeader = `**참석자**: ${analysis.participants?.join(', ') || '미정'}\n**핵심 주제**: ${analysis.key_decisions?.join(', ') || '없음'}\n\n---\n\n`;
+
+            calendar.addEvent({
+                title: summaryTitle,
+                start: meetingDate,
+                end: summaryEnd,
+                color: '#8B5CF6',
+                description: metaHeader + analysis.summary,
+                extendedProps: { description: metaHeader + analysis.summary, isSummary: true }
+            });
+
+            // 2. 태스크
+            const tasks = analysis.todo_tasks || [];
+            if (tasks.length > 0) {
+                let startTime = new Date(meetingDate);
+                startTime.setDate(startTime.getDate() + 1);
+                startTime.setHours(9, 0, 0, 0);
+
+                tasks.forEach((task, index) => {
+                    let eventStart = new Date(startTime);
+                    eventStart.setHours(eventStart.getHours() + index);
+                    if (eventStart.getHours() >= 18) {
+                        eventStart.setDate(eventStart.getDate() + 1);
+                        eventStart.setHours(9 + (index % 9), 0, 0);
+                    }
+                    let eventEnd = new Date(eventStart);
+                    eventEnd.setHours(eventEnd.getHours() + 1);
+
+                    calendar.addEvent({
+                        title: `[T] ${task.title}`,
+                        start: eventStart,
+                        end: eventEnd,
+                        color: '#3B82F6',
+                        description: task.description,
+                        extendedProps: { description: task.description }
+                    });
+                });
+            }
+
+            // 3. 미팅
+            const schedules = analysis.schedule_items || [];
+            schedules.forEach(item => {
+                if (item.date && item.time) {
+                    let start = new Date(`${item.date}T${item.time}`);
+                    let end = new Date(start);
+                    end.setMinutes(end.getMinutes() + (item.duration_minutes || 60));
+
+                    calendar.addEvent({
+                        title: `[M] ${item.title}`,
+                        start: start,
+                        end: end,
+                        color: '#10B981',
+                        description: item.description,
+                        extendedProps: { description: item.description }
+                    });
+                }
+            });
+            saveEventsToStorage();
+        }
+        // --- NEW: Read-Only View Logic ---
+        function showReadOnlyModal(info) {
+            activeEvent = info.event;
+            const props = activeEvent.extendedProps;
+
+            document.getElementById('viewEventTitle').innerText = activeEvent.title;
+
+            // Format time range
+            const start = activeEvent.start;
+            const end = activeEvent.end || start;
+            const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            const timeStr = start.toLocaleString(undefined, options) + ' ~ ' + end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('viewEventTime').innerText = timeStr;
+
+            // Render Description (Markdown support)
+            let desc = props.description || '';
+
+            // Handle [Context] formatting logic
+            if (desc.includes('[Context]')) {
+                const parts = desc.split('[Context]');
+                let mainContent = parts[0].trim();
+                let contextContent = parts[1] ? parts[1].trim() : '';
+
+                if (contextContent) {
+                    mainContent = (typeof marked !== 'undefined') ? marked.parse(mainContent) : mainContent.replace(/\n/g, '<br>');
+                    desc = `
+                        <div>${mainContent}</div>
+                        <div class="context-block">
+                            <span class="context-label">📌 관련 문맥 (Context)</span>
+                            <div class="text-gray-600">${contextContent}</div>
+                        </div>
+                     `;
+                } else {
+                    desc = (typeof marked !== 'undefined') ? marked.parse(desc) : desc.replace(/\n/g, '<br>');
+                }
+                document.getElementById('viewEventDesc').innerHTML = desc;
+            } else {
+                document.getElementById('viewEventDesc').innerHTML = (typeof marked !== 'undefined') ? marked.parse(desc) : desc.replace(/\n/g, '<br>');
+            }
+
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+
+        function editFromViewModal() {
+            document.getElementById('viewModal').classList.add('hidden');
+            openEditModal(activeEvent);
+        }
+
+        // Override closeModal to handle both
+        function closeModal() {
+            document.getElementById('eventModal').classList.add('hidden');
+            document.getElementById('viewModal').classList.add('hidden');
+        }
+
+        // --- NEW: V2 Visualization (Corrected for Staging Area) ---
+        function visualizeCalendarV2(analysis) {
+            // 1. 회의록 요약 이벤트
+            if (analysis.includeSummary) {
+                let meetingDate = new Date();
+                meetingDate.setDate(meetingDate.getDate() + 1);
+                meetingDate.setHours(10, 0, 0, 0);
+
+                const patterns = [/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/, /(\d{4})\.(\d{1,2})\.(\d{1,2})/, /(\d{4})-(\d{1,2})-(\d{1,2})/];
+                for (let pattern of patterns) {
+                    const match = analysis.summary.match(pattern);
+                    if (match) {
+                        meetingDate = new Date(match[1], match[2] - 1, match[3]);
+                        meetingDate.setHours(10, 0, 0, 0);
+                        break;
+                    }
+                }
+
+                let summaryEnd = new Date(meetingDate);
+                summaryEnd.setHours(summaryEnd.getHours() + 1);
+                let summaryTitle = analysis.meeting_title || `📝 회의록 요약`;
+                let metaHeader = `**참석자**: ${analysis.participants?.join(', ') || '미정'}\n**핵심 주제**: ${analysis.key_decisions?.join(', ') || '없음'}\n\n---\n\n`;
+
+                calendar.addEvent({
+                    title: summaryTitle,
+                    start: meetingDate,
+                    end: summaryEnd,
+                    color: '#8B5CF6',
+                    description: metaHeader + analysis.summary,
+                    extendedProps: { description: metaHeader + analysis.summary, isSummary: true }
+                });
+            }
+
+            // 2. 태스크
+            const tasks = analysis.todo_tasks || [];
+            if (tasks.length > 0) {
+                let startTime = new Date();
+                startTime.setDate(startTime.getDate() + 1);
+                startTime.setHours(9, 0, 0, 0);
+
+                tasks.forEach((task, index) => {
+                    let eventStart = new Date(startTime);
+                    eventStart.setHours(eventStart.getHours() + index);
+
+                    if (eventStart.getHours() >= 18) {
+                        eventStart.setDate(eventStart.getDate() + 1);
+                        eventStart.setHours(9 + (index % 9), 0, 0);
+                    }
+                    let eventEnd = new Date(eventStart);
+                    eventEnd.setHours(eventEnd.getHours() + 1);
+
+                    calendar.addEvent({
+                        title: `[T] ${task.title}`,
+                        start: eventStart,
+                        end: eventEnd,
+                        color: '#3B82F6',
+                        description: task.description,
+                        extendedProps: { description: task.description }
+                    });
+                });
+            }
+
+            // 3. 일정 아이템 추가
+            const schedules = analysis.schedule_items || [];
+            schedules.forEach(item => {
+                if (item.date && item.time) {
+                    let start = new Date(`${item.date}T${item.time}`);
+                    let end = new Date(start);
+                    end.setMinutes(end.getMinutes() + (item.duration_minutes || 60));
+
+                    calendar.addEvent({
+                        title: `[M] ${item.title}`,
+                        start: start,
+                        end: end,
+                        color: '#10B981',
+                        description: item.description,
+                        extendedProps: { description: item.description }
+                    });
+                }
+            });
+
+            saveEventsToStorage();
+        }
+        // --- NEW: V3 Visualization (With Explicit Date Support) ---
+        // --- NEW: V3 Visualization (With Explicit Date Support & Filtering Classes) ---
+        function visualizeCalendarV3(analysis) {
+            // 1. 회의록 요약 이벤트
+            if (analysis.includeSummary) {
+                let meetingDate = new Date();
+                meetingDate.setDate(meetingDate.getDate() + 1);
+                meetingDate.setHours(10, 0, 0, 0);
+
+                const patterns = [/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/, /(\d{4})\.(\d{1,2})\.(\d{1,2})/, /(\d{4})-(\d{1,2})-(\d{1,2})/];
+                for (let pattern of patterns) {
+                    const match = analysis.summary.match(pattern);
+                    if (match) {
+                        meetingDate = new Date(match[1], match[2] - 1, match[3]);
+                        meetingDate.setHours(10, 0, 0, 0);
+                        break;
+                    }
+                }
+
+                let summaryEnd = new Date(meetingDate);
+                summaryEnd.setHours(summaryEnd.getHours() + 1);
+                let summaryTitle = analysis.meeting_title || `📝 회의록 요약`;
+                // Check if header exists to avoid double adding
+                let metaHeader = `**참석자**: ${analysis.participants?.join(', ') || '미정'}\n**핵심 주제**: ${analysis.key_decisions?.join(', ') || '없음'}\n\n---\n\n`;
+                let desc = analysis.summary;
+                if (!desc.includes('**참석자**:')) {
+                    desc = metaHeader + desc;
+                }
+
+                calendar.addEvent({
+                    title: summaryTitle,
+                    start: meetingDate,
+                    end: summaryEnd,
+                    color: '#8B5CF6',
+                    classNames: ['event-type-summary'], // Filtering Class
+                    description: desc,
+                    extendedProps: { description: desc, isSummary: true, type: 'summary' }
+                });
+            }
+
+            // 2. 태스크 (Explicit Dates)
+            const tasks = analysis.todo_tasks || [];
+            if (tasks.length > 0) {
+                tasks.forEach((task) => {
+                    let eventStart;
+                    if (task.date && task.time) {
+                        eventStart = new Date(`${task.date}T${task.time}`);
+                    } else {
+                        // Fallback logic
+                        eventStart = new Date();
+                        if (task.date) {
+                            const datePart = new Date(task.date);
+                            eventStart = new Date(datePart);
+                            eventStart.setHours(9, 0, 0, 0);
+                        } else {
+                            eventStart.setDate(eventStart.getDate() + 1);
+                            eventStart.setHours(9, 0, 0, 0);
+                        }
+                    }
+
+                    let eventEnd = new Date(eventStart);
+                    eventEnd.setHours(eventEnd.getHours() + 1);
+
+                    calendar.addEvent({
+                        title: `[T] ${task.title}`,
+                        start: eventStart,
+                        end: eventEnd,
+                        color: '#3B82F6',
+                        classNames: ['event-type-task'], // Filtering Class
+                        description: task.description,
+                        extendedProps: { description: task.description, type: 'task' }
+                    });
+                });
+            }
+
+            // 3. 미팅
+            const schedules = analysis.schedule_items || [];
+            if (schedules.length > 0) {
+                schedules.forEach(item => {
+                    let start;
+                    if (item.date && item.time) {
+                        start = new Date(`${item.date}T${item.time}`);
+                    } else {
+                        start = new Date();
+                        if (item.date) {
+                            const datePart = new Date(item.date);
+                            start = new Date(datePart);
+                            start.setHours(10, 0, 0, 0);
+                        } else {
+                            start.setDate(start.getDate() + 1);
+                            start.setHours(10, 0, 0, 0);
+                        }
+                    }
+
+                    let end = new Date(start);
+                    end.setMinutes(end.getMinutes() + (item.duration_minutes || 60));
+
+                    calendar.addEvent({
+                        title: `[M] ${item.title}`,
+                        start: start,
+                        end: end,
+                        color: '#10B981',
+                        classNames: ['event-type-meeting'], // Filtering Class
+                        description: item.description,
+                        extendedProps: { description: item.description, type: 'meeting' }
+                    });
+                });
+            }
+
+            saveEventsToStorage();
+
+            // Re-apply filters after adding new events
+            Object.keys(activeFilters).forEach(type => {
+                if (!activeFilters[type]) {
+                    const wrapper = document.getElementById('calendar');
+                    wrapper.classList.add(`calendar-filtered-${type}`);
+                }
+            });
+        }
+
+        // --- NEW: Filter Logic ---
+        const activeFilters = { summary: true, task: true, meeting: true };
+
+        function toggleFilter(type) {
+            const btn = document.getElementById(`filter-${type}`);
+
+            activeFilters[type] = !activeFilters[type];
+
+            // Toggle Button State
+            if (activeFilters[type]) {
+                btn.classList.remove('inactive');
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+                btn.classList.add('inactive');
+            }
+
+            // Toggle CSS Class on Calendar Container (to hide events)
+            const wrapper = document.getElementById('calendar');
+            if (activeFilters[type]) {
+                wrapper.classList.remove(`calendar-filtered-${type}`);
+            } else {
+                wrapper.classList.add(`calendar-filtered-${type}`);
+            }
         }
     </script>
 </body>
+
 </html>

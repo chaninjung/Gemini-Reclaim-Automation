@@ -95,6 +95,51 @@ def analyze():
         }), 500
 
 
+@app.route('/sync', methods=['POST'])
+def sync_calcom():
+    """분석 결과를 Cal.com에 동기화 (수동)"""
+    
+    # API 키 확인
+    if not CALCOM_API_KEY:
+        return jsonify({
+            'success': False,
+            'error': 'CALCOM_API_KEY가 설정되지 않았습니다.'
+        }), 500
+
+    try:
+        data = request.json
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': '데이터가 없습니다.'
+            }), 400
+            
+        calcom = CalcomClient(CALCOM_API_KEY, CALCOM_BASE_URL, CALCOM_USER_ID, TIMEZONE)
+        
+        # 캘린더 이벤트 직접 동기화 (프론트엔드에서 확정된 일정)
+        if 'calendar_events' in data:
+            sync_results = calcom.sync_calendar_events(data['calendar_events'])
+        # 기존 분석 결과 동기화 (하위 호환성)
+        elif 'analysis_result' in data:
+            sync_results = calcom.sync_meeting_analysis(data['analysis_result'])
+        else:
+            return jsonify({
+                'success': False,
+                'error': '동기화할 데이터가 없습니다 (calendar_events 또는 analysis_result 필요).'
+            }), 400
+        
+        return jsonify({
+            'success': True,
+            'sync_results': sync_results
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @app.route('/health')
 def health():
     """헬스체크 엔드포인트"""

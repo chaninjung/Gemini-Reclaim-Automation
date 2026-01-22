@@ -46,9 +46,10 @@ class CalcomClient:
             이벤트 타입 목록
         """
         try:
+            # Cal.com API v1은 쿼리 파라미터로 apiKey 전달
             response = requests.get(
-                f"{self.base_url}/event-types",
-                headers=self.headers,
+                f"{self.base_url}/event-types?apiKey={self.api_key}",
+                headers={"Content-Type": "application/json"},
                 timeout=10
             )
             response.raise_for_status()
@@ -84,8 +85,8 @@ class CalcomClient:
             }
 
             response = requests.post(
-                f"{self.base_url}/event-types",
-                headers=self.headers,
+                f"{self.base_url}/event-types?apiKey={self.api_key}",
+                headers={"Content-Type": "application/json"},
                 json=event_type_data,
                 timeout=10
             )
@@ -132,8 +133,8 @@ class CalcomClient:
 
         try:
             response = requests.post(
-                f"{self.base_url}/bookings",
-                headers=self.headers,
+                f"{self.base_url}/bookings?apiKey={self.api_key}",
+                headers={"Content-Type": "application/json"},
                 json=booking_data,
                 timeout=10
             )
@@ -160,7 +161,8 @@ class CalcomClient:
         description: str = "",
         due_date: Optional[str] = None,
         priority: str = "medium",
-        duration_minutes: int = 60
+        duration_minutes: int = 60,
+        start_time: Optional[datetime] = None  # 시작 시간 직접 지정 가능
     ) -> Dict[str, Any]:
         """
         태스크를 Cal.com 이벤트로 생성
@@ -172,6 +174,7 @@ class CalcomClient:
             due_date: 마감일 (YYYY-MM-DD 형식)
             priority: 우선순위 (high/medium/low)
             duration_minutes: 예상 소요 시간 (분)
+            start_time: 시작 시간 (datetime 객체)
 
         Returns:
             생성 결과
@@ -180,19 +183,25 @@ class CalcomClient:
         priority_emoji = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(priority, "⚪")
         full_title = f"{priority_emoji} [태스크] {title}"
 
-        # 마감일이 있으면 그 날짜로, 없으면 내일로 설정
-        if due_date:
-            try:
-                task_date = datetime.strptime(due_date, "%Y-%m-%d")
-            except ValueError:
+        # 시작 시간이 지정되지 않은 경우 기본 로직 수행
+        if not start_time:
+            # 마감일이 있으면 그 날짜로, 없으면 내일로 설정
+            if due_date:
+                try:
+                    task_date = datetime.strptime(due_date, "%Y-%m-%d")
+                except ValueError:
+                    task_date = datetime.now() + timedelta(days=1)
+            else:
                 task_date = datetime.now() + timedelta(days=1)
-        else:
-            task_date = datetime.now() + timedelta(days=1)
 
-        # 시간은 오전 9시로 기본 설정
-        task_datetime = self.timezone.localize(
-            task_date.replace(hour=9, minute=0, second=0, microsecond=0)
-        )
+            # 시간은 오전 9시로 기본 설정
+            start_time = self.timezone.localize(
+                task_date.replace(hour=9, minute=0, second=0, microsecond=0)
+            )
+        else:
+            # 이미 timezone이 있는지 확인
+            if start_time.tzinfo is None:
+                start_time = self.timezone.localize(start_time)
 
         # 이벤트 타입 조회 또는 생성
         event_types = self.get_event_types()
@@ -221,7 +230,7 @@ class CalcomClient:
         # 예약 생성
         return self.create_booking(
             event_type_id=task_event_type.get("id"),
-            start=task_datetime.isoformat(),
+            start=start_time.isoformat(),
             responses={
                 "name": "Automated Task",
                 "email": "task@automated.local",
@@ -327,13 +336,29 @@ class CalcomClient:
         }
 
         # TODO 태스크를 이벤트로 생성
-        for task in analysis_result.get("todo_tasks", []):
+        # 시작 시간: 내일 오전 9시부터 시작
+        start_time = datetime.now(self.timezone) + timedelta(days=1)
+        start_time = start_time.replace(hour=9, minute=0, second=0, microsecond=0)
+
+        for i, task in enumerate(analysis_result.get("todo_tasks", [])):
+            # 각 태스크마다 1시간씩 뒤로 미룸
+            task_start_time = start_time + timedelta(hours=i)
+            
+            # 오후 6시 넘어가면 다음 날 오전 9시로
+            if task_start_time.hour >= 18:
+                days_to_add = (i // 9) + 1  # 9시간(9시~18시) 단위로 날짜 변경
+                task_start_time = start_time + timedelta(days=days_to_add)
+                # 시간 조정 (나머지 연산)
+                hour_offset = i % 9
+                task_start_time = task_start_time.replace(hour=9 + hour_offset)
+
             result = self.create_task_as_event(
                 title=task.get("title", "제목 없음"),
                 description=task.get("description", ""),
                 due_date=task.get("deadline"),
                 priority=task.get("priority", "medium"),
-                duration_minutes=60  # 기본 1시간
+                duration_minutes=60,  # 기본 1시간
+                start_time=task_start_time
             )
 
             if result["success"]:
@@ -355,6 +380,71 @@ class CalcomClient:
                 results["events_created"].append(result["message"])
             else:
                 results["errors"].append(f"{result['message']}: {result.get('error', 'Unknown error')}")
+
+        return results
+
+    def sync_calendar_events(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        프론트엔드 캘린더에서 확정된 이벤트를 Cal.com에 동기화
+        
+        Args:
+            events: 캘린더 이벤트 리스트 (FullCalendar 포맷)
+        
+        Returns:
+            동기화 결과
+        """
+        results = {
+            "tasks_created": [],
+            "events_created": [],
+            "errors": []
+        }
+
+        for event in events:
+            try:
+                title = event.get('title', '제목 없음')
+                # FullCalendar는 [T] 접두어를 사용할 수 있음
+                clean_title = title.replace('[T] ', '').replace('[M] ', '')
+                
+                description = event.get('description') or event.get('extendedProps', {}).get('description', '')
+                start_str = event.get('start')
+                
+                # ISO 포맷 파싱
+                start_dt = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+                
+                # 타임존 처리 (단순화: 이미 들어온 시간이 정확하다고 가정하고 타임존만 부여)
+                # 실제로는 프론트에서 온 시간이 어떤 타임존인지 확인 필요하지만
+                # 일단 로컬 시간으로 간주
+                if start_dt.tzinfo is None:
+                    start_dt = self.timezone.localize(start_dt)
+                
+                # 이벤트 타입 구분 ([T] 태스크, [M] 미팅)
+                if '[M]' in title:
+                    result = self.create_scheduled_event(
+                        title=clean_title,
+                        description=description,
+                        date=start_dt.strftime('%Y-%m-%d'),
+                        time=start_dt.strftime('%H:%M'),
+                        duration_minutes=60 
+                    )
+                    if result["success"]:
+                        results["events_created"].append(result["message"])
+                    else:
+                        results["errors"].append(f"{result['message']}: {result.get('error')}")
+                else:
+                    # 기본은 태스크로 처리
+                    result = self.create_task_as_event(
+                        title=clean_title,
+                        description=description,
+                        priority="medium", # 기본값
+                        start_time=start_dt
+                    )
+                    if result["success"]:
+                        results["tasks_created"].append(result["message"])
+                    else:
+                        results["errors"].append(f"{result['message']}: {result.get('error')}")
+
+            except Exception as e:
+                results["errors"].append(f"이벤트 처리 중 오류 ({event.get('title')}): {str(e)}")
 
         return results
 

@@ -20,7 +20,7 @@ class GeminiAnalyzer:
             api_key: Google Gemini API 키
         """
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
 
     def analyze_meeting_notes(self, text: str) -> Dict[str, Any]:
         """
@@ -46,9 +46,28 @@ class GeminiAnalyzer:
 {text}
 \"\"\"
 
+분석 요구사항:
+1.  **요약(summary)**: 사용자가 선호하는 다음 'Notion 스타일' 구조로 작성해주세요. (마크다운 포맷)
+    -   **핵심 요약 정리**: 회의의 핵심 주제와 결론을 구조화하여 정리
+    -   **주요 프로세스/기준**: (해당하는 경우) 판정 기준, 작업 방식 등
+    -   **입력/출력 데이터**: (해당하는 경우) Input 소스, Output 산출물
+    -   **회의록 개요**: 일시, 소요시간, 참석자 (AI 개발팀/상대 부서 구분)
+    -   **주요 논의 사항**: 안건별 현황, 문제점, 해결 방안 (번호 매겨서 정리)
+    -   **기대 효과**: (해당하는 경우)
+    -   **액션 아이템**: (체크박스 스타일)
+
+2.  **태스크 추출(todo_tasks)**: 
+    -   **중요**: 단순히 "논의했다"거나 "생각해본다"는 내용은 태스크로 잡지 마세요.
+    -   **반드시** "언제까지 하기로 했다", "누가 무엇을 담당한다", "확실한 마감일이 있다"는 내용만 추출해주세요.
+    -   모호한 내용은 제외하고, **실행 가능한(Actionable)** 항목만 포함하세요.
+
+3.  **일정 추출(schedule_items)**:
+    -   확정된 미팅, 시연회, 마감일 등 구체적인 날짜와 시간이 있는 이벤트만 추출하세요.
+
 다음 형식의 JSON으로 응답해주세요:
 {{
-    "summary": "회의 전체 요약 (2-3문장)",
+    "meeting_title": "AI가 제안하는 회의록 제목 (예: 2026-01-16 AI 개발팀 주간 회의)",
+    "summary": "위 요구사항에 맞춘 마크다운 형식의 상세 요약 텍스트",
     "completed_tasks": [
         {{
             "title": "완료된 작업 제목",
@@ -62,7 +81,8 @@ class GeminiAnalyzer:
             "description": "작업 상세 설명",
             "priority": "high/medium/low",
             "who": "담당자 (있으면)",
-            "deadline": "마감일 (있으면, YYYY-MM-DD 형식)"
+            "deadline": "마감일 (있으면, YYYY-MM-DD 형식)",
+            "context": "이 작업이 도출된 회의록의 원문 문장 혹은 배경 설명"
         }}
     ],
     "schedule_items": [
@@ -71,7 +91,8 @@ class GeminiAnalyzer:
             "description": "일정 설명",
             "date": "날짜 (있으면, YYYY-MM-DD 형식)",
             "time": "시간 (있으면, HH:MM 형식)",
-            "duration_minutes": 예상 소요 시간 (숫자, 분 단위)
+            "duration_minutes": 예상 소요 시간 (숫자, 분 단위),
+            "context": "이 일정이 논의된 회의록의 원문 문장 혹은 배경 설명"
         }}
     ],
     "important_dates": [
