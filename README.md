@@ -2,14 +2,16 @@
 
 **완전 무료** 회의록 자동 분석 & 스케줄 관리 시스템
 
-클로바노트 등에서 다운받은 회의록 텍스트를 AI가 자동으로 분석해서 셀프호스팅 Cal.com에 태스크와 일정으로 등록해줍니다!
+웹 인터페이스에서 회의록 텍스트를 입력하면 Gemini AI가 자동으로 분석해서 Cal.com에 태스크와 일정으로 등록해줍니다!
 
 ## ✨ 주요 기능
 
+- 🌐 **웹 인터페이스**: 브라우저에서 쉽게 회의록 입력
 - 📝 **회의록 자동 분석**: Google Gemini AI로 회의록에서 중요 정보 추출
-- 📅 **자동 스케줄링**: 분석 결과를 Reclaim.ai에 자동으로 태스크/이벤트 등록
+- 📅 **자동 스케줄링**: 분석 결과를 Cal.com에 자동으로 태스크/이벤트 등록
 - 💰 **완전 무료**: Gemini 무료 티어 사용 (일 1,500회 요청)
-- 🚀 **간편한 사용**: txt 파일만 넣으면 끝!
+- 🚀 **간편한 사용**: 텍스트만 입력하면 끝!
+- 🐳 **Docker 지원**: Docker Compose로 한 번에 배포
 
 ## 🎯 분석 내용
 
@@ -22,122 +24,167 @@
 
 ## 🚀 빠른 시작
 
-### 1단계: API 키 발급 (무료!)
+### 방법 1: 웹 인터페이스 사용 (추천!)
 
-#### Google Gemini API Key
+#### 1단계: API 키 발급
+
+**Google Gemini API Key (필수)**
 1. https://aistudio.google.com/app/apikey 접속
 2. Google 계정으로 로그인
 3. "Create API Key" 클릭
 4. API 키 복사
 5. **무료 한도**: 분당 15회, 하루 1,500회 요청
 
-#### Cal.com 셀프호스팅
-1. Docker와 Docker Compose 설치
-2. `docs/CALCOM_SETUP.md` 가이드 확인
-3. Cal.com 배포 및 초기 설정
-4. API 키 생성
+**Cal.com API Key (필수)**
+1. https://app.cal.com 접속 (공식 Cal.com 사용)
+2. Settings → Developer → API Keys 이동
+3. "Create New API Key" 클릭
+4. API 키 복사
 
-### 2단계: 설치
+> **참고**: Cal.com 셀프호스팅은 복잡하고 에러가 많습니다. **공식 Cal.com 사용을 강력히 권장**합니다!
+
+#### 2단계: 설치 및 설정
 
 ```bash
 # 저장소 클론
-git clone https://github.com/chaninjung/Gemini-Reclaim-Automation.git
-cd Gemini-Reclaim-Automation
+git clone https://github.com/chaninjung/meeting-notes-automation.git
+cd meeting-notes-automation
 
-# 자동 설정 스크립트 실행
-chmod +x setup.sh
-./setup.sh
+# .env 파일 수정
+nano .env
+# 또는
+vim .env
 ```
 
-### 3단계: Cal.com 설정
-
-자세한 내용은 `docs/CALCOM_SETUP.md`를 참고하세요.
-
+`.env` 파일에서 API 키 입력:
 ```bash
-# Cal.com Docker 배포
-docker compose -f docker-compose.calcom.yml up -d
-
-# 브라우저에서 http://localhost:3000 접속
-# 초기 설정 위저드 완료
-# Settings → Developer → API Keys에서 API 키 생성
-```
-
-### 4단계: API 키 설정
-
-`config/.env` 파일을 열고 API 키 입력:
-
-```bash
-# config/.env
 GEMINI_API_KEY=your_gemini_api_key_here
 CALCOM_API_KEY=your_calcom_api_key_here
-CALCOM_BASE_URL=http://localhost:3000
-CALCOM_USER_ID=your_user_id_here
+CALCOM_BASE_URL=https://api.cal.com/v1
 TIMEZONE=Asia/Seoul
 ```
 
-### 5단계: 사용하기
+#### 3단계: 실행
+
+**Docker 사용 (추천)**
+```bash
+# Docker Compose로 실행
+docker compose up -d
+
+# 로그 확인
+docker compose logs -f
+```
+
+**Python 직접 실행**
+```bash
+# 패키지 설치
+pip install -r requirements.txt
+
+# 웹 서버 실행
+python app.py
+```
+
+#### 4단계: 사용하기
+
+1. 브라우저에서 http://localhost:5000 접속
+2. 회의록 텍스트 입력 또는 붙여넣기
+3. "📅 Cal.com에 자동으로 등록하기" 체크
+4. "🚀 분석 및 등록하기" 버튼 클릭
+5. 결과 확인!
+
+---
+
+### 방법 2: 커맨드라인 사용
 
 ```bash
-# 가상환경 활성화
-source venv/bin/activate
+# 패키지 설치
+pip install -r requirements.txt
 
 # 회의록 txt 파일을 input/ 폴더에 넣기
 cp my_meeting_notes.txt input/
 
 # 실행!
-python3 src/main.py
+python src/main.py
 ```
 
 ## 📖 사용 방법
 
-### 기본 사용 (한번 실행)
+### 웹 인터페이스 (추천)
+
+1. **서버 실행**
+   ```bash
+   # Docker 사용
+   docker compose up -d
+
+   # 또는 Python 직접 실행
+   python app.py
+   ```
+
+2. **브라우저 접속**
+   - http://localhost:5000
+
+3. **회의록 입력**
+   - 텍스트 입력창에 회의록 붙여넣기
+   - 또는 직접 입력
+
+4. **분석 및 등록**
+   - "📅 Cal.com에 자동으로 등록하기" 체크 (원하는 경우)
+   - "🚀 분석 및 등록하기" 버튼 클릭
+
+5. **결과 확인**
+   - 분석 결과가 화면에 표시됩니다
+   - Cal.com에 자동으로 등록됩니다
+
+### 커맨드라인 인터페이스
+
+#### 기본 사용 (한번 실행)
 
 ```bash
-python3 src/main.py
+python src/main.py
 ```
 
 `input/` 폴더의 모든 txt 파일을 처리하고, Cal.com에 동기화합니다.
 
-### 감시 모드 (자동 처리)
+#### 감시 모드 (자동 처리)
 
 ```bash
-python3 src/main.py --mode watch
+python src/main.py --mode watch
 ```
 
 `input/` 폴더를 감시하다가 새 txt 파일이 추가되면 자동으로 처리합니다.
 
-### 분석만 (동기화 안함)
+#### 분석만 (동기화 안함)
 
 ```bash
-python3 src/main.py --no-sync
+python src/main.py --no-sync
 ```
 
 회의록 분석만 수행하고 Cal.com에는 등록하지 않습니다. (테스트용)
 
-### 특정 파일만 처리
+#### 특정 파일만 처리
 
 ```bash
-python3 src/main.py --file input/meeting_2024.txt
+python src/main.py --file input/meeting_2024.txt
 ```
 
 ## 📁 프로젝트 구조
 
 ```
-Gemini-Cal.com-Automation/
-├── config/
-│   ├── .env.example          # API 키 설정 예시
-│   └── .env                  # 실제 API 키 (git에 추가 안됨)
-├── docs/
-│   └── CALCOM_SETUP.md       # Cal.com 셀프호스팅 가이드
-├── input/                    # 회의록 txt 파일을 넣는 곳
+meeting-notes-automation/
+├── .env.example              # API 키 설정 예시
+├── .env                      # 실제 API 키 (git에 추가 안됨)
+├── app.py                    # Flask 웹 애플리케이션
+├── Dockerfile                # Docker 이미지 빌드 설정
+├── docker-compose.yml        # Docker Compose 설정
+├── requirements.txt          # Python 패키지
+├── templates/                # 웹 UI 템플릿
+│   └── index.html           # 메인 페이지
+├── input/                    # 회의록 txt 파일을 넣는 곳 (CLI 모드)
 ├── processed/                # 처리된 파일과 분석 결과 보관
 ├── src/
 │   ├── gemini_analyzer.py   # Gemini AI 분석 모듈
 │   ├── calcom_client.py     # Cal.com API 클라이언트
-│   └── main.py              # 메인 자동화 스크립트
-├── docker-compose.calcom.yml # Cal.com Docker 구성
-├── requirements.txt         # Python 패키지
-├── setup.sh                 # 자동 설정 스크립트
+│   └── main.py              # CLI 자동화 스크립트
 └── README.md
 ```
 
@@ -195,7 +242,7 @@ python3 calcom_client.py
 완전 **무료**입니다!
 
 - **Gemini API**: 무료 티어로 하루 1,500회 요청 가능
-- **Reclaim.ai**: 무료 플랜 사용 가능
+- **Cal.com**: 무료 플랜 사용 가능 (공식 서비스)
 - **서버**: 로컬에서 실행 (서버 비용 없음)
 
 일일 회의록 10개 정도는 무료 한도 내에서 충분히 처리 가능합니다.

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 회의록 자동화 - Gemini + Cal.com</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-section label {
+            display: block;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .options {
+            margin-bottom: 20px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-section {
+            margin-bottom: 20px;
+        }
+
+        .result-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .result-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item h4 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .result-item p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .badge-high { background: #fee; color: #d00; }
+        .badge-medium { background: #ffa; color: #880; }
+        .badge-low { background: #efe; color: #080; }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #d00;
+            border-left: 4px solid #d00;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #080;
+            border-left: 4px solid #080;
+        }
+
+        .example {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .example h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .example pre {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 회의록 자동화</h1>
+            <p>Gemini AI + Cal.com 통합</p>
+        </div>
+
+        <div class="main-card">
+            <form id="meetingForm">
+                <div class="input-section">
+                    <label for="meeting_notes">📝 회의록 입력</label>
+                    <textarea
+                        id="meeting_notes"
+                        name="meeting_notes"
+                        placeholder="여기에 회의록 텍스트를 붙여넣거나 입력하세요...
+
+예시:
+회의 제목: 2024년 1월 프로젝트 회의
+날짜: 2024-01-22
+참석자: 김철수, 박영희
+
+완료한 작업:
+- 백엔드 API 개발 완료 (김철수)
+
+해야 할 일:
+- 프론트엔드 개발 시작 (박영희) - 마감: 2024-01-26
+- API 테스트 (김철수) - 높은 우선순위
+
+다음 미팅:
+- 날짜: 2024-01-29
+- 시간: 오후 2시
+- 예상 시간: 1시간"
+                    ></textarea>
+                </div>
+
+                <div class="options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="auto_sync" name="auto_sync" checked>
+                        <span>📅 Cal.com에 자동으로 등록하기</span>
+                    </label>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn-primary" id="analyzeBtn">
+                        🚀 분석 및 등록하기
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="clearForm()">
+                        🔄 초기화
+                    </button>
+                </div>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Gemini AI로 회의록 분석 중...</p>
+            </div>
+
+            <div class="results" id="results"></div>
+
+            <div class="example">
+                <h4>💡 작성 팁</h4>
+                <p>분석 정확도를 높이려면 다음 형식을 참고하세요:</p>
+                <pre>회의 제목: [제목]
+날짜: YYYY-MM-DD
+참석자: [이름1, 이름2, ...]
+
+완료한 작업:
+- [작업 내용] (담당자)
+
+해야 할 일:
+- [작업 내용] (담당자) - 마감: YYYY-MM-DD
+- [작업 내용] - 높은/중간/낮은 우선순위
+
+다음 미팅:
+- 날짜: YYYY-MM-DD
+- 시간: HH:MM
+- 장소: [장소]
+
+주요 결정사항:
+- [결정사항1]
+- [결정사항2]</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('meetingForm');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const meetingNotes = document.getElementById('meeting_notes').value.trim();
+            const autoSync = document.getElementById('auto_sync').checked;
+
+            if (!meetingNotes) {
+                alert('회의록 내용을 입력해주세요.');
+                return;
+            }
+
+            // UI 업데이트
+            analyzeBtn.disabled = true;
+            loading.classList.add('active');
+            results.classList.remove('active');
+
+            try {
+                const formData = new FormData();
+                formData.append('meeting_notes', meetingNotes);
+                formData.append('auto_sync', autoSync);
+
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    displayError(data.error || '분석 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                displayError('서버와 통신 중 오류가 발생했습니다: ' + error.message);
+            } finally {
+                loading.classList.remove('active');
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            const analysis = data.analysis;
+            const syncResults = data.sync_results;
+
+            let html = '';
+
+            // 성공 메시지
+            html += '<div class="alert alert-success">';
+            html += '✅ 회의록 분석이 완료되었습니다!';
+            if (data.auto_sync_enabled && syncResults) {
+                const total = syncResults.tasks_created.length + syncResults.events_created.length;
+                html += ` ${total}개 항목이 Cal.com에 등록되었습니다.`;
+            }
+            html += '</div>';
+
+            // 요약
+            if (analysis.summary) {
+                html += '<div class="result-section">';
+                html += '<h3>📋 전체 요약</h3>';
+                html += `<div class="result-item"><p>${analysis.summary}</p></div>`;
+                html += '</div>';
+            }
+
+            // 참석자
+            if (analysis.participants && analysis.participants.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>👥 참석자</h3>';
+                html += '<div class="result-item">';
+                html += '<p>' + analysis.participants.join(', ') + '</p>';
+                html += '</div>';
+                html += '</div>';
+            }
+
+            // 주요 결정사항
+            if (analysis.key_decisions && analysis.key_decisions.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>✅ 주요 결정사항</h3>';
+                analysis.key_decisions.forEach(decision => {
+                    html += '<div class="result-item">';
+                    html += `<p>${decision}</p>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            // 완료된 작업
+            if (analysis.completed_tasks && analysis.completed_tasks.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>✔️ 완료된 작업</h3>';
+                analysis.completed_tasks.forEach(task => {
+                    html += '<div class="result-item">';
+                    html += `<h4>${task.title}</h4>`;
+                    if (task.who) html += `<p>담당자: ${task.who}</p>`;
+                    if (task.description) html += `<p>${task.description}</p>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            // 해야 할 작업
+            if (analysis.todo_tasks && analysis.todo_tasks.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>📌 해야 할 작업</h3>';
+                analysis.todo_tasks.forEach(task => {
+                    html += '<div class="result-item">';
+
+                    const priorityClass = `badge-${task.priority || 'medium'}`;
+                    const priorityText = { high: '높음', medium: '중간', low: '낮음' }[task.priority || 'medium'];
+
+                    html += `<span class="badge ${priorityClass}">${priorityText}</span>`;
+                    html += `<h4>${task.title}</h4>`;
+                    if (task.who) html += `<p>담당자: ${task.who}</p>`;
+                    if (task.deadline) html += `<p>마감: ${task.deadline}</p>`;
+                    if (task.description) html += `<p>${task.description}</p>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            // 예정된 일정
+            if (analysis.schedule_items && analysis.schedule_items.length > 0) {
+                html += '<div class="result-section">';
+                html += '<h3>📅 예정된 일정</h3>';
+                analysis.schedule_items.forEach(item => {
+                    html += '<div class="result-item">';
+                    html += `<h4>${item.title}</h4>`;
+                    if (item.date) html += `<p>날짜: ${item.date}</p>`;
+                    if (item.time) html += `<p>시간: ${item.time}</p>`;
+                    if (item.duration_minutes) html += `<p>소요 시간: ${item.duration_minutes}분</p>`;
+                    if (item.description) html += `<p>${item.description}</p>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            // Cal.com 동기화 결과
+            if (syncResults && data.auto_sync_enabled) {
+                html += '<div class="result-section">';
+                html += '<h3>📤 Cal.com 동기화 결과</h3>';
+
+                if (syncResults.tasks_created.length > 0) {
+                    html += '<div class="result-item">';
+                    html += `<h4>✅ 생성된 태스크 (${syncResults.tasks_created.length}개)</h4>`;
+                    html += '<ul>';
+                    syncResults.tasks_created.forEach(msg => {
+                        html += `<li>${msg}</li>`;
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+
+                if (syncResults.events_created.length > 0) {
+                    html += '<div class="result-item">';
+                    html += `<h4>📅 생성된 이벤트 (${syncResults.events_created.length}개)</h4>`;
+                    html += '<ul>';
+                    syncResults.events_created.forEach(msg => {
+                        html += `<li>${msg}</li>`;
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+
+                if (syncResults.errors.length > 0) {
+                    html += '<div class="result-item">';
+                    html += `<h4>⚠️ 오류 (${syncResults.errors.length}개)</h4>`;
+                    html += '<ul>';
+                    syncResults.errors.forEach(msg => {
+                        html += `<li>${msg}</li>`;
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+
+                html += '</div>';
+            }
+
+            results.innerHTML = html;
+            results.classList.add('active');
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayError(message) {
+            results.innerHTML = `
+                <div class="alert alert-error">
+                    ❌ ${message}
+                </div>
+            `;
+            results.classList.add('active');
+        }
+
+        function clearForm() {
+            document.getElementById('meeting_notes').value = '';
+            results.classList.remove('active');
+        }
+    </script>
+</body>
+</html>

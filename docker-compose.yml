@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # 회의록 자동화 웹 앱
+  meeting-automation-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meeting-automation-web
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # .env 파일에서 환경 변수 로드
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CALCOM_API_KEY=${CALCOM_API_KEY}
+      - CALCOM_BASE_URL=${CALCOM_BASE_URL:-https://api.cal.com/v1}
+      - CALCOM_USER_ID=${CALCOM_USER_ID}
+      - TIMEZONE=${TIMEZONE:-Asia/Seoul}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-dev-secret-key}
+      - FLASK_DEBUG=${FLASK_DEBUG:-False}
+      - PORT=5000
+    volumes:
+      - ./input:/app/input
+      - ./processed:/app/processed
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  default:
+    name: meeting-automation-network
