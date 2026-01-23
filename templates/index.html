@@ -491,15 +491,15 @@
         let contextEvent = null;
 
         document.addEventListener('DOMContentLoaded', function () {
-            const savedNotes = localStorage.getItem(STORAGE_KEY_NOTES);
-            if (savedNotes) document.getElementById('meetingNotes').value = savedNotes;
-
             editor = new toastui.Editor({
                 el: document.querySelector('#editor'),
                 height: '100%',
                 initialEditType: 'wysiwyg',
                 previewStyle: 'vertical'
             });
+
+            // Load data from server
+            loadDataFromServer();
 
             var calendarEl = document.getElementById('calendar');
             calendar = new FullCalendar.Calendar(calendarEl, {
@@ -524,7 +524,9 @@
                 editable: true,
                 droppable: true,
                 selectable: true,
-                events: JSON.parse(localStorage.getItem(STORAGE_KEY_EVENTS) || '[]'),
+                droppable: true,
+                selectable: true,
+                events: [], // Initial empty, will be loaded from server
 
                 eventDidMount: function (info) {
                     info.el.addEventListener('contextmenu', function (e) {
@@ -552,10 +554,50 @@
             // 캘린더에 이벤트가 있으면 등록 버튼 활성화
             checkSyncButtonState();
 
+            // Debounced Save for Meeting Notes
+            let notesTimeout;
             document.getElementById('meetingNotes').addEventListener('input', function (e) {
-                localStorage.setItem(STORAGE_KEY_NOTES, e.target.value);
+                clearTimeout(notesTimeout);
+                notesTimeout = setTimeout(() => {
+                    saveDataToServer({ meeting_notes: e.target.value });
+                }, 1000); // 1 second debounce
             });
         });
+
+        // --- Server Persistence Logic ---
+        async function loadDataFromServer() {
+            try {
+                const response = await fetch('/api/db');
+                const result = await response.json();
+                if (result.success) {
+                    // Restore Meeting Notes
+                    if (result.data.meeting_notes) {
+                        document.getElementById('meetingNotes').value = result.data.meeting_notes;
+                    }
+
+                    // Restore Calendar Events
+                    if (result.data.events) {
+                        calendar.removeAllEvents();
+                        calendar.addEventSource(result.data.events);
+                    }
+                    checkSyncButtonState();
+                }
+            } catch (error) {
+                console.error('Failed to load data:', error);
+            }
+        }
+
+        async function saveDataToServer(data) {
+            try {
+                await fetch('/api/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            } catch (error) {
+                console.error('Failed to save data:', error);
+            }
+        }
 
         // --- Context Menu ---
         function showContextMenu(e, event) {
@@ -638,7 +680,10 @@
                 color: e.backgroundColor,
                 extendedProps: e.extendedProps
             }));
-            localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(events));
+
+            // Save to Server
+            saveDataToServer({ events: events });
+
             checkSyncButtonState();
         }
 
@@ -656,8 +701,10 @@
 
         function clearStorage() {
             if (confirm('모든 데이터를 초기화하고 새로 시작하시겠습니까?')) {
-                localStorage.clear();
-                location.reload();
+                // localStorage.clear(); // No longer used
+                saveDataToServer({ meeting_notes: "", events: [] }).then(() => {
+                    location.reload();
+                });
             }
         }
 
