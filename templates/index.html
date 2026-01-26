@@ -106,8 +106,7 @@
             <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Step-by-Step Workflow</span>
         </div>
         <div class="flex items-center gap-4">
-            <button onclick="clearStorage()" class="text-xs text-gray-400 hover:text-red-500 underline">새로 시작하기
-                (초기화)</button>
+
         </div>
     </header>
 
@@ -699,14 +698,7 @@
             }
         }
 
-        function clearStorage() {
-            if (confirm('모든 데이터를 초기화하고 새로 시작하시겠습니까?')) {
-                // localStorage.clear(); // No longer used
-                saveDataToServer({ meeting_notes: "", events: [] }).then(() => {
-                    location.reload();
-                });
-            }
-        }
+
 
         // --- STEP 1: Analyze ---
         async function analyzeNotes() {

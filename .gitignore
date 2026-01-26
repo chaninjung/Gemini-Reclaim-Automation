@@ -208,8 +208,4 @@ __marimo__/
 
 # Project specific
 config/.env
-input/*.txt
-!input/example_meeting.txt
-processed/*
-!processed/.gitkeep
-cal-com-official/
+data/

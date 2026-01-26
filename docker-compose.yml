@@ -21,8 +21,6 @@ services:
       - FLASK_DEBUG=${FLASK_DEBUG:-False}
       - PORT=5000
     volumes:
-      - ./input:/app/input
-      - ./processed:/app/processed
       - ./logs:/app/logs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
