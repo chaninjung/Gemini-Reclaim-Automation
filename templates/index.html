@@ -266,16 +266,7 @@
             margin-right: 0;
         }
 
-        /* Filter Buttons */
-        .filter-btn.active {
-            background-color: #f4f4f5;
-            color: #09090b;
-        }
 
-        .filter-btn.inactive {
-            background-color: transparent;
-            color: #a1a1aa;
-        }
 
         /* Modal Context Block */
         .context-block {
@@ -334,7 +325,6 @@
         <div class="flex items-center gap-3">
             <a href="https://github.com/shadcn/ui" target="_blank"
                 class="text-xs text-zinc-500 hover:text-zinc-900 font-medium transition-colors">Documentation</a>
-            <div class="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200"></div>
         </div>
     </header>
 
@@ -413,28 +403,33 @@
         <!-- Right Panel: Calendar -->
         <div class="flex-1 flex flex-col bg-white min-w-0">
             <div class="h-14 border-b border-zinc-200 flex items-center justify-between px-6 bg-white">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-4">
                     <h2 class="text-sm font-semibold text-zinc-900">Calendar</h2>
+
+                    <!-- Category Filters -->
+                    <div class="flex items-center gap-1">
+                        <button onclick="toggleCategory('ai_req')" id="cat-ai_req"
+                            class="cat-btn active px-2 py-0.5 text-[11px] font-bold rounded-full border border-zinc-200 transition-all text-zinc-600 bg-zinc-50 hover:bg-zinc-100 data-[state=inactive]:opacity-50 data-[state=inactive]:line-through">AI
+                            요청사항</button>
+                        <button onclick="toggleCategory('dev_prog')" id="cat-dev_prog"
+                            class="cat-btn active px-2 py-0.5 text-[11px] font-bold rounded-full border border-zinc-200 transition-all text-zinc-600 bg-zinc-50 hover:bg-zinc-100 data-[state=inactive]:opacity-50 data-[state=inactive]:line-through">개발
+                            진행상황</button>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <!-- Clean Filters -->
-                    <div class="flex items-center gap-1 bg-zinc-100/50 p-1 rounded-md border border-zinc-200/50">
+                    <!-- Clean Filters (Capsule Style with Dots) -->
+                    <div class="flex items-center gap-1">
                         <button onclick="toggleFilter('summary')" id="filter-summary"
-                            class="filter-btn active px-2.5 py-1 text-xs font-medium rounded text-zinc-600 hover:text-zinc-900 transition-all">Summary</button>
+                            class="active px-2.5 py-0.5 text-[11px] font-bold rounded-full border border-zinc-200 transition-all text-zinc-600 bg-zinc-50 hover:bg-zinc-100 data-[state=inactive]:opacity-50 data-[state=inactive]:line-through flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>Summary</button>
                         <button onclick="toggleFilter('task')" id="filter-task"
-                            class="filter-btn active px-2.5 py-1 text-xs font-medium rounded text-zinc-600 hover:text-zinc-900 transition-all">Tasks</button>
+                            class="active px-2.5 py-0.5 text-[11px] font-bold rounded-full border border-zinc-200 transition-all text-zinc-600 bg-zinc-50 hover:bg-zinc-100 data-[state=inactive]:opacity-50 data-[state=inactive]:line-through flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Tasks</button>
                         <button onclick="toggleFilter('meeting')" id="filter-meeting"
-                            class="filter-btn active px-2.5 py-1 text-xs font-medium rounded text-zinc-600 hover:text-zinc-900 transition-all">Meetings</button>
+                            class="active px-2.5 py-0.5 text-[11px] font-bold rounded-full border border-zinc-200 transition-all text-zinc-600 bg-zinc-50 hover:bg-zinc-100 data-[state=inactive]:opacity-50 data-[state=inactive]:line-through flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Meetings</button>
                     </div>
-
-                    <button onclick="openCreateModal()"
-                        class="px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-md hover:bg-zinc-800 transition-all shadow-sm flex items-center gap-1.5">
-                        <span>+</span>
-                        <span>New</span>
-                    </button>
-
-
                 </div>
             </div>
 
@@ -504,6 +499,15 @@
                         <input type="text" id="editEventTitle"
                             class="w-full text-base font-semibold border border-zinc-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 outline-none text-zinc-900 placeholder-zinc-400"
                             placeholder="Event Title">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Category</label>
+                        <select id="editEventCategory"
+                            class="w-full text-sm font-medium border border-zinc-200 rounded-md px-3 py-2 bg-white outline-none focus:border-zinc-400 text-zinc-900 cursor-pointer">
+                            <option value="ai_req">AI 요청사항</option>
+                            <option value="dev_prog">개발 진행상황</option>
+                        </select>
                     </div>
                     <div>
                         <label
@@ -657,15 +661,22 @@
                 editable: true,
                 droppable: true,
                 selectable: true,
+                dateClick: function (info) {
+                    openCreateModal(info.dateStr);
+                },
                 events: [],
                 eventClassNames: function (arg) {
-                    if (arg.event.extendedProps.isSummary) {
-                        return ['event-type-summary'];
-                    } else if (arg.event.extendedProps.isTask) {
-                        return ['event-type-task'];
-                    } else {
-                        return ['event-type-meeting'];
-                    }
+                    const classes = [];
+                    // Type Classes
+                    if (arg.event.extendedProps.isSummary) classes.push('event-type-summary');
+                    else if (arg.event.extendedProps.isTask) classes.push('event-type-task');
+                    else classes.push('event-type-meeting');
+
+                    // Category Classes (Default to ai_req if missing)
+                    const cat = arg.event.extendedProps.category || 'ai_req';
+                    classes.push('cat-' + cat);
+
+                    return classes;
                 },
                 eventDidMount: function (info) {
                     info.el.addEventListener('contextmenu', function (e) {
@@ -786,24 +797,33 @@
         }
 
         // Modals
-        function openCreateModal() {
+        function openCreateModal(dateStr) {
             activeEvent = null;
             document.getElementById('editEventId').value = '';
             document.getElementById('editEventTitle').value = '';
             document.getElementById('modalTitle').innerText = 'New Event';
             document.getElementById('editEventType').value = 'meeting'; // Default
+            document.getElementById('editEventCategory').value = 'ai_req'; // Default category
 
-            // Default 1 hour from now
-            const now = new Date();
-            now.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0);
+            // Default time handling
+            let startDate = new Date();
+            if (dateStr) {
+                // If date clicked, use that date + 09:00 AM (default start of day) or current time if today
+                startDate = new Date(dateStr);
+                // Adjust to local 9 AM for better UX on day click
+                startDate.setHours(9, 0, 0, 0);
+            } else {
+                // If button clicked, next 30 min slot
+                startDate.setMinutes(Math.ceil(startDate.getMinutes() / 30) * 30, 0, 0);
+            }
 
             const toLocalISO = (date) => {
                 const tzOffset = date.getTimezoneOffset() * 60000;
                 return (new Date(date - tzOffset)).toISOString().slice(0, 16);
             };
 
-            document.getElementById('editEventStart').value = toLocalISO(now);
-            document.getElementById('editEventEnd').value = toLocalISO(new Date(now.getTime() + 3600000));
+            document.getElementById('editEventStart').value = toLocalISO(startDate);
+            document.getElementById('editEventEnd').value = toLocalISO(new Date(startDate.getTime() + 3600000)); // +1 hour
             editor.setMarkdown('');
 
             // Hide delete during creation
@@ -826,6 +846,9 @@
             if (event.extendedProps.isTask) type = 'task';
             else if (event.extendedProps.isSummary) type = 'summary';
             document.getElementById('editEventType').value = type;
+
+            // Set Category
+            document.getElementById('editEventCategory').value = event.extendedProps.category || 'ai_req';
 
             const toLocalISO = (date) => {
                 const tzOffset = date.getTimezoneOffset() * 60000;
@@ -936,6 +959,7 @@
             const newStart = new Date(document.getElementById('editEventStart').value);
             const newEnd = new Date(document.getElementById('editEventEnd').value);
             const newType = document.getElementById('editEventType').value;
+            const newCategory = document.getElementById('editEventCategory').value;
 
             if (!newTitle.trim()) { alert('Please enter a title'); return; }
 
@@ -944,6 +968,7 @@
                 isMeeting: newType === 'meeting',
                 isTask: newType === 'task',
                 isSummary: newType === 'summary',
+                category: newCategory,
                 sourceId: document.getElementById('editEventSourceId').value || undefined
             };
 
@@ -956,6 +981,7 @@
                 activeEvent.setExtendedProp('isMeeting', props.isMeeting);
                 activeEvent.setExtendedProp('isTask', props.isTask);
                 activeEvent.setExtendedProp('isSummary', props.isSummary);
+                activeEvent.setExtendedProp('category', props.category);
                 activeEvent.setExtendedProp('sourceId', props.sourceId);
 
                 activeEvent.setStart(newStart);
@@ -1009,12 +1035,15 @@
         function toggleFilter(type) {
             const btn = document.getElementById('filter-' + type);
             const isActive = btn.classList.contains('active');
+
             if (isActive) {
                 btn.classList.remove('active');
                 btn.classList.add('inactive');
+                btn.setAttribute('data-state', 'inactive');
             } else {
                 btn.classList.remove('inactive');
                 btn.classList.add('active');
+                btn.removeAttribute('data-state');
             }
 
             const isSummaryHidden = document.getElementById('filter-summary').classList.contains('inactive');
@@ -1033,6 +1062,39 @@
             if (isSummaryHidden) css += '.event-type-summary {display: none !important; } ';
             if (isTaskHidden) css += '.event-type-task {display: none !important; } ';
             if (isMeetingHidden) css += '.event-type-meeting {display: none !important; } ';
+
+            styleEl.innerHTML = css;
+        }
+
+        function toggleCategory(cat) {
+            const btn = document.getElementById('cat-' + cat);
+            const isActive = btn.classList.contains('active');
+
+            if (isActive) {
+                btn.classList.remove('active');
+                btn.setAttribute('data-state', 'inactive');
+            } else {
+                btn.classList.add('active');
+                btn.removeAttribute('data-state');
+            }
+            updateCategoryFilter();
+        }
+
+        function updateCategoryFilter() {
+            const isAiReqActive = document.getElementById('cat-ai_req').classList.contains('active');
+            const isDevProgActive = document.getElementById('cat-dev_prog').classList.contains('active');
+
+            const styleId = 'cat-filter-styles';
+            let styleEl = document.getElementById(styleId);
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = styleId;
+                document.head.appendChild(styleEl);
+            }
+
+            let css = '';
+            if (!isAiReqActive) css += '.fc-event.cat-ai_req { display: none !important; } ';
+            if (!isDevProgActive) css += '.fc-event.cat-dev_prog { display: none !important; } ';
 
             styleEl.innerHTML = css;
         }

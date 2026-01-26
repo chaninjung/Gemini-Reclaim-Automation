@@ -1,12 +1,14 @@
 # Smart Scheduler v2
 
-AI 기반 회의록 자동 분석 및 일정 관리 시스템
+**Gemini AI & FullCalendar 기반 회의록 자동 분석 및 일정 관리 시스템**
 
 [English](./README.en.md)
 
 ## 개요
 
-Smart Scheduler v2는 Google Gemini AI를 활용하여 회의록을 자동으로 분석하고, 추출된 정보를 통합 캘린더에 등록하는 웹 기반 일정 관리 시스템입니다. 회의록에서 태스크, 일정, 핵심 정보를 자동으로 추출하여 효율적인 업무 관리를 지원합니다.
+Smart Scheduler v2는 **Google Gemini AI**와 **FullCalendar**를 결합하여 만든 강력한 일정 관리 시스템입니다. 회의록 텍스트를 AI가 분석하고, 이를 FullCalendar 기반의 직관적인 UI에 자동으로 등록해줍니다.
+
+FullCalendar의 강력한 일정 관리 기능과 생성형 AI의 분석 능력을 통합한 실전 예제 프로젝트입니다.
 
 ## 주요 기능
 

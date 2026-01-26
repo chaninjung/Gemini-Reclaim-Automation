@@ -1,12 +1,14 @@
 # Smart Scheduler v2
 
-AI-Powered Meeting Notes Analysis and Schedule Management System
+**Meeting Notes Automation & Scheduling with Gemini AI & FullCalendar**
 
 [한국어](./README.md)
 
 ## Overview
 
-Smart Scheduler v2 is a web-based schedule management system that automatically analyzes meeting notes using Google Gemini AI and registers extracted information to an integrated calendar. It automatically extracts tasks, schedules, and key information from meeting notes to support efficient work management.
+Smart Scheduler v2 is a powerful schedule management system combining **Google Gemini AI** and **FullCalendar**. It automatically analyzes meeting notes using AI and registers extracted information onto an intuitive FullCalendar-based user interface.
+
+This project demonstrates the integration of FullCalendar's robust scheduling features with GenAI analysis capabilities.
 
 ## Key Features
 
