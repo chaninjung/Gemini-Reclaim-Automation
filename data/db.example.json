@@ -1,0 +1,40 @@
+{
+  "events": [
+    {
+      "id": "example_summary_1",
+      "title": "프로젝트 킥오프 미팅/개발팀/26-01-15",
+      "start": "2026-01-15T09:00:00",
+      "allDay": true,
+      "description": "# 회의 요약\n\n## 핵심 요약\n- 새로운 프로젝트 시작\n- 팀 구성 완료\n- 일정 확정\n\n## 주요 논의 사항\n1. 프로젝트 범위 정의\n2. 역할 분담\n3. 마일스톤 설정\n\n## 액션 아이템\n- [ ] 요구사항 문서 작성\n- [ ] 기술 스택 선정",
+      "extendedProps": {
+        "description": "# 회의 요약\n\n## 핵심 요약\n- 새로운 프로젝트 시작\n- 팀 구성 완료\n- 일정 확정",
+        "isSummary": true,
+        "sourceId": "batch_example_1"
+      }
+    },
+    {
+      "id": "example_task_1",
+      "title": "개발팀 요구사항 문서 작성",
+      "start": "2026-01-20T10:00:00",
+      "end": "2026-01-20T12:00:00",
+      "description": "프로젝트 요구사항 문서 초안 작성",
+      "extendedProps": {
+        "description": "프로젝트 요구사항 문서 초안 작성",
+        "isTask": true,
+        "sourceId": "batch_example_1"
+      }
+    },
+    {
+      "id": "example_meeting_1",
+      "title": "개발팀 주간 회의",
+      "start": "2026-01-22T14:00:00",
+      "end": "2026-01-22T15:00:00",
+      "description": "주간 진행 상황 공유 및 이슈 논의",
+      "extendedProps": {
+        "description": "주간 진행 상황 공유 및 이슈 논의",
+        "isMeeting": true,
+        "sourceId": "batch_example_1"
+      }
+    }
+  ]
+}
