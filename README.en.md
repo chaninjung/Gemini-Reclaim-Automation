@@ -81,6 +81,9 @@ docker compose up -d
 # Install dependencies
 pip install -r requirements.txt
 
+# (Optional) Start with example data
+cp data/db.example.json data/db.json
+
 # Run server
 python app.py
 ```

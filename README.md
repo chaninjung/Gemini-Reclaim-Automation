@@ -81,6 +81,9 @@ docker compose up -d
 # 의존성 설치
 pip install -r requirements.txt
 
+# (선택사항) 예시 데이터로 시작하기
+cp data/db.example.json data/db.json
+
 # 서버 실행
 python app.py
 ```
