@@ -113,7 +113,51 @@
             transition: all 0.15s ease;
         }
 
+
+
+        /* Hide default FullCalendar dots to prevent double dots */
+        .fc-daygrid-event-dot {
+            display: none !important;
+        }
+
         /* Event Variants */
+        /* Restore Dots */
+        .event-type-summary .fc-event-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #a855f7;
+            /* Purple 500 */
+            margin-right: 6px;
+            margin-bottom: 1px;
+        }
+
+        .event-type-task .fc-event-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            /* Blue 500 */
+            margin-right: 6px;
+            margin-bottom: 1px;
+        }
+
+        .event-type-meeting .fc-event-title::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #10b981;
+            /* Emerald 500 */
+            margin-right: 6px;
+            margin-bottom: 1px;
+        }
+
         .event-type-summary {
             background-color: #f4f4f5 !important;
             /* Zinc-100 */
