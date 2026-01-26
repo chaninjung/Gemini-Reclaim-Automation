@@ -209,3 +209,5 @@ __marimo__/
 # Project specific
 config/.env
 data/
+data/db.json
+data/backups/
