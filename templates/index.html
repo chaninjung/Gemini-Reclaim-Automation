@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 회의록 자동화 - Smart Scheduler</title>
+    <title>Smart Scheduler v2</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%233b82f6' stroke='%231e3a8a' stroke-width='3'/><circle cx='50' cy='50' r='38' fill='white'/><line x1='50' y1='50' x2='50' y2='25' stroke='%231e3a8a' stroke-width='3' stroke-linecap='round'/><line x1='50' y1='50' x2='65' y2='35' stroke='%231e3a8a' stroke-width='3' stroke-linecap='round'/><circle cx='50' cy='20' r='2' fill='%233b82f6'/><circle cx='50' cy='80' r='2' fill='%233b82f6'/><circle cx='20' cy='50' r='2' fill='%233b82f6'/><circle cx='80' cy='50' r='2' fill='%233b82f6'/></svg>">
 
     <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -17,136 +19,377 @@
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
     <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 
+    <!-- Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
+        :root {
+            --radius: 0.5rem;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #ffffff;
+            color: #09090b;
+            /* Zinc-950 */
+            -webkit-font-smoothing: antialiased;
         }
 
+        /* Custom Scrollbar (Subtle) */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e4e4e7;
+            border-radius: 99px;
+        }
+
+        /* Zinc-200 */
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4d4d8;
+        }
+
+        /* Zinc-300 */
+
+        /* FullCalendar Shadcn Overrides */
+        .fc {
+            font-family: 'Inter', sans-serif;
+            --fc-border-color: #e4e4e7;
+            /* Zinc-200 */
+        }
+
+        .fc-theme-standard .fc-scrollgrid {
+            border: none !important;
+        }
+
+        .fc-theme-standard td,
+        .fc-theme-standard th {
+            border-color: #e4e4e7 !important;
+        }
+
+        .fc-col-header-cell {
+            padding: 12px 0;
+            background-color: #ffffff;
+        }
+
+        .fc-col-header-cell-cushion {
+            color: #71717a;
+            /* Zinc-500 */
+            font-weight: 500;
+            font-size: 0.75rem;
+            /* text-xs */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .fc-daygrid-day-number {
+            color: #52525b;
+            /* Zinc-600 */
+            font-size: 0.875rem;
+            /* text-sm */
+            font-weight: 500;
+            padding: 8px;
+        }
+
+        .fc-day-today {
+            background-color: #fafafa !important;
+            /* Zinc-50 */
+        }
+
+        /* Shadcn-like Events */
         .fc-event {
-            cursor: pointer;
-            transition: all 0.2s;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            box-shadow: none;
+            transition: all 0.15s ease;
         }
 
-        .fc-event:hover {
-            transform: scale(1.02);
-            z-index: 50;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        /* Event Variants */
+        .event-type-summary {
+            background-color: #f4f4f5 !important;
+            /* Zinc-100 */
+            border-color: #e4e4e7 !important;
+            /* Zinc-200 */
+            color: #3f3f46 !important;
+            /* Zinc-700 */
+            border-left: 3px solid #71717a !important;
+            /* Zinc-500 */
         }
 
+        .event-type-task {
+            background-color: #eff6ff !important;
+            /* Blue-50 */
+            border-color: #dbeafe !important;
+            color: #1d4ed8 !important;
+            /* Blue-700 (Vibrant) */
+            border-left: 3px solid #3b82f6 !important;
+        }
+
+        .event-type-meeting {
+            background-color: #f0fdf4 !important;
+            /* Green-50 */
+            border-color: #dcfce7 !important;
+            color: #15803d !important;
+            /* Green-700 (Darker/Vibrant) */
+            border-left: 3px solid #22c55e !important;
+        }
+
+        /* Ensure text color cascades to inner elements */
+        .event-type-meeting .fc-event-main,
+        .event-type-task .fc-event-main,
+        .event-type-summary .fc-event-main {
+            color: inherit !important;
+        }
+
+        .fc-toolbar-title {
+            font-size: 1.125rem !important;
+            font-weight: 600 !important;
+            color: #09090b !important;
+            letter-spacing: -0.025em;
+        }
+
+        .fc-button-primary {
+            background-color: white !important;
+            border: 1px solid #e4e4e7 !important;
+            color: #18181b !important;
+            font-weight: 500 !important;
+            font-size: 0.875rem !important;
+            padding: 0.375rem 0.75rem !important;
+            border-radius: 0.375rem !important;
+            /* rounded-md */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .fc-button-primary:hover {
+            background-color: #f4f4f5 !important;
+            border-color: #e4e4e7 !important;
+        }
+
+        .fc-button-active {
+            background-color: #f4f4f5 !important;
+            border-color: #e4e4e7 !important;
+            color: #09090b !important;
+        }
+
+        /* Toast UI Editor Clean Override */
         .toastui-editor-defaultUI {
-            border: 1px solid #e5e7eb !important;
-            border-radius: 0.5rem;
+            border: 1px solid #e4e4e7 !important;
+            border-radius: 0.5rem !important;
         }
 
-        .toastui-editor-contents {
-            font-size: 14px;
-            font-family: inherit;
+        .toastui-editor-toolbar {
+            background-color: #fafafa !important;
+            border-bottom: 1px solid #e4e4e7 !important;
+            border-radius: 0.5rem 0.5rem 0 0 !important;
+        }
+
+        .toastui-editor-defaultUI-toolbar button {
+            border-radius: 4px;
+        }
+
+        .toastui-editor-defaultUI-toolbar button:hover {
+            background-color: #e4e4e7;
         }
 
         #contextMenu {
             position: absolute;
             z-index: 1000;
             display: none;
+            background: white;
+            border: 1px solid #e4e4e7;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 4px;
+            min-width: 140px;
         }
 
-        /* Markdown Preview Style */
+        /* Typography Utilities */
+        .tracking-tight {
+            letter-spacing: -0.025em;
+        }
+
+        /* Markdown Preview - Linear Style */
         .markdown-preview h1 {
-            font-size: 1.4em;
-            font-weight: bold;
-            margin: 0.8em 0 0.4em 0;
+            font-size: 1.25em;
+            font-weight: 600;
+            color: #09090b;
+            margin: 1em 0 0.5em 0;
+            letter-spacing: -0.025em;
         }
 
         .markdown-preview h2 {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin: 0.8em 0 0.4em 0;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 4px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #18181b;
+            margin: 1em 0 0.5em 0;
+            border-bottom: 1px solid #e4e4e7;
+            padding-bottom: 0.3em;
         }
 
-        .markdown-preview h3 {
-            font-size: 1.1em;
-            font-weight: bold;
-            margin: 0.8em 0 0.4em 0;
+        .markdown-preview p {
+            margin-bottom: 0.75em;
+            color: #3f3f46;
+            line-height: 1.6;
+            font-size: 0.925rem;
+        }
+
+        .markdown-preview strong {
+            color: #09090b;
+            font-weight: 600;
         }
 
         .markdown-preview ul {
             list-style: disc;
-            padding-left: 1.2em;
-            margin-bottom: 0.5em;
-        }
-
-        .markdown-preview ol {
-            list-style: decimal;
-            padding-left: 1.2em;
-            margin-bottom: 0.5em;
+            padding-left: 1.25em;
+            margin-bottom: 1em;
+            color: #3f3f46;
         }
 
         .markdown-preview li {
-            margin-bottom: 0.2em;
+            margin-bottom: 0.25em;
         }
 
-        .markdown-preview p {
-            margin-bottom: 0.8em;
+        .markdown-preview blockquote {
+            border-left: 2px solid #e4e4e7;
+            padding-left: 1em;
+            color: #71717a;
+            margin-left: 0;
+            margin-right: 0;
         }
 
-        .markdown-preview strong {
-            color: #1d4ed8;
+        /* Filter Buttons */
+        .filter-btn.active {
+            background-color: #f4f4f5;
+            color: #09090b;
+        }
+
+        .filter-btn.inactive {
+            background-color: transparent;
+            color: #a1a1aa;
+        }
+
+        /* Modal Context Block */
+        .context-block {
+            background-color: #fafafa;
+            border-left: 3px solid #e4e4e7;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            border-radius: 0 0.375rem 0.375rem 0;
+            font-size: 0.9em;
+            color: #52525b;
+        }
+
+        .context-label {
+            font-weight: 600;
+            color: #3f3f46;
+            margin-bottom: 0.25rem;
+            display: block;
+            text-transform: uppercase;
+            font-size: 0.75em;
+        }
+
+        /* Animation Utility */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 
-<body class="bg-gray-100 h-screen flex flex-col" onclick="hideContextMenu()">
+<body class="bg-background h-screen flex flex-col antialiased text-zinc-950" onclick="hideContextMenu()">
 
-    <!-- Header -->
-    <header class="bg-white shadow-sm h-16 flex items-center px-6 justify-between flex-shrink-0 z-10">
+    <!-- Header (Minimalist) -->
+    <header
+        class="bg-white border-b border-zinc-200 h-14 flex items-center px-6 justify-between flex-shrink-0 z-20 sticky top-0">
         <div class="flex items-center gap-3">
-            <span class="text-2xl">🤖</span>
-            <h1 class="font-bold text-xl text-gray-800">Smart Scheduler</h1>
-            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Step-by-Step Workflow</span>
+            <div
+                class="w-8 h-8 bg-zinc-900 rounded-md flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                SS
+            </div>
+            <div class="flex items-baseline gap-2">
+                <h1 class="font-semibold text-sm text-zinc-900 tracking-tight">Smart Scheduler</h1>
+                <span class="text-[10px] text-zinc-500 font-medium">v2.0.0</span>
+            </div>
         </div>
-        <div class="flex items-center gap-4">
-
+        <div class="flex items-center gap-3">
+            <a href="https://github.com/shadcn/ui" target="_blank"
+                class="text-xs text-zinc-500 hover:text-zinc-900 font-medium transition-colors">Documentation</a>
+            <div class="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200"></div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex overflow-hidden">
+    <!-- Main Content (Full Height Dashboard) -->
+    <main class="flex-1 flex overflow-hidden bg-white">
 
-        <!-- Left Panel: Input & Analysis Preview -->
-        <div class="w-2/5 bg-white border-r border-gray-200 flex flex-col bg-gray-50">
-            <div class="p-6 flex-1 overflow-y-auto">
-                <h2 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <span
-                        class="bg-gray-200 text-gray-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                    <span>회의록 입력</span>
-                </h2>
-
-                <!-- Expanded Textarea -->
-                <textarea id="meetingNotes"
-                    class="w-full h-[500px] p-5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm leading-relaxed shadow-sm mb-4 font-mono"
-                    placeholder="여기에 회의록을 붙여넣으세요..."></textarea>
-
-                <div class="flex justify-end gap-2 border-b border-gray-200 pb-6 mb-6">
-                    <button onclick="document.getElementById('meetingNotes').value=''"
-                        class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">지우기</button>
-                    <button onclick="analyzeNotes()" id="analyzeBtn"
-                        class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2">
-                        <span>🚀 1차 분석 시작</span>
-                    </button>
+        <!-- Left Panel: Input Area (Resizable) -->
+        <div id="sidebarPanel" style="width: 450px; min-width: 300px; max-width: 800px;"
+            class="flex flex-col flex-shrink-0 bg-white shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10 relative">
+            <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-zinc-900 tracking-tight mb-1">Meeting Notes</h2>
+                    <p class="text-sm text-zinc-500">Paste your raw notes below. AI will structure them.</p>
                 </div>
 
-                <!-- Analysis Preview Stage -->
-                <div id="previewStage" class="hidden pb-10">
-                    <!-- Dynamic Content Area -->
-                    <div id="summaryPreview" class="w-full"></div>
+                <!-- Input Area -->
+                <div class="relative group mb-4">
+                    <textarea id="meetingNotes"
+                        class="w-full h-[360px] p-4 bg-zinc-50/50 border border-zinc-200 rounded-md focus:bg-white focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 transition-all resize-none text-sm leading-6 text-zinc-800 placeholder-zinc-400 font-mono outline-none"
+                        placeholder="Paste notes here..."></textarea>
 
-                    <!-- Action Button Area -->
-                    <div class="flex flex-col gap-2 mt-8 pt-6 border-t border-gray-100">
-                        <p class="text-xs text-gray-500 mb-2 text-center">👇 이 내용을 바탕으로 스케줄을 생성하시겠습니까?</p>
+                    <div class="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="openFullscreenEditor('meetingNotes')" type="button"
+                            class="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors px-2 py-1 hover:bg-zinc-100 rounded flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                            <span>크게보기</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="analyzeNotes()" id="analyzeBtn"
+                    class="w-full py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-md hover:bg-zinc-900/90 transition-all shadow-sm flex justify-center items-center gap-2">
+                    <span>Analyze Notes</span>
+                    <span class="text-zinc-400 text-xs text-zinc-500">⌘↵</span>
+                </button>
+
+                <!-- Analysis Preview Stage -->
+                <div id="previewStage" class="hidden mt-8 fade-in">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="h-px flex-1 bg-zinc-100"></div>
+                        <span class="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Preview</span>
+                        <div class="h-px flex-1 bg-zinc-100"></div>
+                    </div>
+
+                    <!-- Dynamic Content Area -->
+                    <div id="summaryPreview" class="w-full space-y-6"></div>
+
+                    <!-- Action -->
+                    <div class="mt-6 pt-6 border-t border-zinc-100">
                         <button onclick="applyToCalendar()"
-                            class="w-full py-3 bg-purple-600 text-white text-sm font-bold rounded-lg hover:bg-purple-700 transition-colors shadow-md flex items-center justify-center gap-2">
-                            <span>📅 4. 캘린더/스케줄러에 반영하기</span>
+                            class="w-full py-2.5 bg-white border border-zinc-200 text-zinc-900 text-sm font-medium rounded-md hover:bg-zinc-50 transition-all shadow-sm">
+                            Add to Calendar
                         </button>
                     </div>
                 </div>
@@ -154,324 +397,192 @@
                 <!-- Loading State -->
                 <div id="loadingState" class="hidden mt-12 text-center">
                     <div
-                        class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent">
+                        class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-zinc-200 border-t-zinc-900">
                     </div>
-                    <p class="mt-2 text-sm text-gray-500 animate-pulse">LLM이 회의록을 분석하고 있습니다...</p>
+                    <p class="mt-3 text-sm font-medium text-zinc-900">Analyzing...</p>
                 </div>
             </div>
         </div>
 
+        <!-- Resizer Handle -->
+        <div id="resizer"
+            class="w-1 bg-zinc-200 hover:bg-zinc-300 cursor-col-resize flex flex-col justify-center items-center transition-colors z-20 flex-shrink-0 group">
+            <div class="h-8 w-1 bg-zinc-300 rounded-full group-hover:bg-zinc-400 transition-colors"></div>
+        </div>
+
         <!-- Right Panel: Calendar -->
-        <div class="w-3/5 bg-white p-6 overflow-hidden flex flex-col border-l-4 border-gray-100">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                    <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                        <span
-                            class="bg-purple-100 text-purple-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">5</span>
-                        <span>업무 캘린더</span>
-                    </h2>
+        <div class="flex-1 flex flex-col bg-white min-w-0">
+            <div class="h-14 border-b border-zinc-200 flex items-center justify-between px-6 bg-white">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-sm font-semibold text-zinc-900">Calendar</h2>
                 </div>
 
-                <button onclick="syncToCalcom()" id="syncBtn"
-                    class="px-6 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-md flex items-center gap-2 opacity-50 cursor-not-allowed"
-                    disabled>
-                    <span>🚀 최종 완료 (Cal.com 등록)</span>
-                </button>
+                <div class="flex items-center gap-3">
+                    <!-- Clean Filters -->
+                    <div class="flex items-center gap-1 bg-zinc-100/50 p-1 rounded-md border border-zinc-200/50">
+                        <button onclick="toggleFilter('summary')" id="filter-summary"
+                            class="filter-btn active px-2.5 py-1 text-xs font-medium rounded text-zinc-600 hover:text-zinc-900 transition-all">Summary</button>
+                        <button onclick="toggleFilter('task')" id="filter-task"
+                            class="filter-btn active px-2.5 py-1 text-xs font-medium rounded text-zinc-600 hover:text-zinc-900 transition-all">Tasks</button>
+                        <button onclick="toggleFilter('meeting')" id="filter-meeting"
+                            class="filter-btn active px-2.5 py-1 text-xs font-medium rounded text-zinc-600 hover:text-zinc-900 transition-all">Meetings</button>
+                    </div>
+
+                    <button onclick="openCreateModal()"
+                        class="px-3 py-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-md hover:bg-zinc-800 transition-all shadow-sm flex items-center gap-1.5">
+                        <span>+</span>
+                        <span>New</span>
+                    </button>
+
+
+                </div>
             </div>
 
-            <div id="syncResultConfig"
-                class="mb-4 bg-green-50 rounded border border-green-100 p-3 text-xs text-green-900 hidden flex justify-between items-center">
-                <span id="syncResultText"></span>
-                <button onclick="this.parentElement.classList.add('hidden')"
-                    class="text-green-700 hover:text-green-900">✕</button>
-            </div>
 
-            <div class="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden text-sm relative">
+
+            <div class="flex-1 p-0 overflow-hidden relative">
                 <div id='calendar' class="h-full"></div>
-            </div>
-
-            <div class="mt-3 flex gap-2 text-xs justify-end items-center">
-                <!-- Interactive Legend / Filters -->
-                <button onclick="toggleFilter('summary')" id="filter-summary"
-                    class="filter-btn active px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100 font-medium hover:bg-purple-100 transition-all flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-purple-500"></span> 회의록 요약
-                </button>
-                <button onclick="toggleFilter('task')" id="filter-task"
-                    class="filter-btn active px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium hover:bg-blue-100 transition-all flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-blue-500"></span> 태스크
-                </button>
-                <button onclick="toggleFilter('meeting')" id="filter-meeting"
-                    class="filter-btn active px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-100 font-medium hover:bg-green-100 transition-all flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 미팅
-                </button>
             </div>
         </div>
 
     </main>
-    <style>
-        /* Notion-like Summary Preview Styling (Modal & Preview) */
-        .prose {
-            color: #37352f;
-            line-height: 1.6;
-            font-size: 15px;
-        }
 
-        .prose h1 {
-            font-size: 1.8em;
-            font-weight: 700;
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-            color: #111827;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 0.3em;
-        }
-
-        .prose h2 {
-            font-size: 1.5em;
-            font-weight: 600;
-            margin-top: 1.2em;
-            margin-bottom: 0.5em;
-            color: #1f2937;
-        }
-
-        .prose h3 {
-            font-size: 1.25em;
-            font-weight: 600;
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-            color: #374151;
-        }
-
-        .prose strong {
-            font-weight: 600;
-            color: #111827;
-        }
-
-        .prose ul {
-            list-style-type: disc;
-            padding-left: 1.5em;
-            margin-bottom: 1em;
-        }
-
-        .prose ol {
-            list-style-type: decimal;
-            padding-left: 1.5em;
-            margin-bottom: 1em;
-        }
-
-        .prose li {
-            margin-bottom: 0.25em;
-        }
-
-        .prose p {
-            margin-bottom: 1em;
-        }
-
-        .prose blockquote {
-            border-left: 4px solid #e5e7eb;
-            padding-left: 1em;
-            color: #6b7280;
-            font-style: italic;
-            margin-bottom: 1em;
-        }
-
-        #summaryPreview {
-            /* Apply styling to preview as well - duplicating prose styles for compatibility */
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #37352f;
-            line-height: 1.6;
-        }
-
-        #summaryPreview h1 {
-            font-size: 1.8em;
-            font-weight: 700;
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-            color: #111827;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 0.3em;
-        }
-
-        #summaryPreview h2 {
-            font-size: 1.5em;
-            font-weight: 600;
-            margin-top: 1.2em;
-            margin-bottom: 0.5em;
-            color: #1f2937;
-        }
-
-        #summaryPreview h3 {
-            font-size: 1.25em;
-            font-weight: 600;
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-            color: #374151;
-        }
-
-        #summaryPreview ul {
-            list-style-type: disc;
-            padding-left: 1.5em;
-            margin-bottom: 1em;
-        }
-
-        #summaryPreview li {
-            margin-bottom: 0.25em;
-        }
-
-        #summaryPreview p {
-            margin-bottom: 1em;
-        }
-
-        #summaryPreview blockquote {
-            border-left: 4px solid #e5e7eb;
-            padding-left: 1em;
-            color: #6b7280;
-            font-style: italic;
-            margin-bottom: 1em;
-        }
-
-        /* Filter Styles for Calendar Events */
-        .calendar-filtered-summary .event-type-summary {
-            display: none !important;
-        }
-
-        .calendar-filtered-task .event-type-task {
-            display: none !important;
-        }
-
-        .calendar-filtered-meeting .event-type-meeting {
-            display: none !important;
-        }
-
-        /* Button Inactive State */
-        .filter-btn.inactive {
-            background-color: #f3f4f6;
-            color: #9ca3af;
-            border-color: #e5e7eb;
-        }
-
-        .filter-btn.inactive span {
-            background-color: #d1d5db;
-        }
-
-        /* Modal Context Styling */
-        .context-block {
-            background-color: #f9fafb;
-            border-left: 3px solid #d1d5db;
-            padding: 0.75rem 1rem;
-            margin-top: 1rem;
-            border-radius: 0 0.375rem 0.375rem 0;
-            font-size: 0.9em;
-            color: #4b5563;
-        }
-
-        .context-label {
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 0.25rem;
-            display: block;
-            text-transform: uppercase;
-            font-size: 0.75em;
-            letter-spacing: 0.05em;
-        }
-
-        .context-label {
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 0.25rem;
-            display: block;
-            text-transform: uppercase;
-            font-size: 0.75em;
-            letter-spacing: 0.05em;
-        }
-
-        .filter-btn.inactive span {
-            background-color: #d1d5db;
-        }
-    </style>
-
-    <!-- Context Menu -->
-    <div id="contextMenu" class="bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-32">
+    <!-- Context Menu (Zinc Style) -->
+    <div id="contextMenu" class="bg-white rounded-md shadow-lg border border-zinc-200 py-1 w-32 z-50 hidden">
         <button onclick="onClickContextEdit()"
-            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">✏️ 편집하기</button>
+            class="block w-full text-left px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 transition-colors">Edit</button>
         <button onclick="onClickContextDelete()"
-            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">🗑️ 삭제하기</button>
+            class="block w-full text-left px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors">Delete</button>
     </div>
 
-    <!-- Read-Only Event View Modal (Widened) -->
-    <div id="viewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl shadow-2xl w-[800px] flex flex-col overflow-hidden max-h-[85vh]">
-            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-start bg-gray-50">
+    <!-- Read-Only Event View Modal (Zinc Style) -->
+    <div id="viewModal"
+        class="hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-lg shadow-2xl w-[700px] flex flex-col overflow-hidden max-h-[85vh] border border-zinc-200">
+            <div class="px-6 py-4 border-b border-zinc-100 flex justify-between items-start bg-white">
                 <div>
-                    <h3 id="viewEventTitle" class="text-2xl font-bold text-gray-800 leading-snug"></h3>
-                    <p id="viewEventTime" class="text-base text-gray-500 mt-1 font-medium"></p>
+                    <h3 id="viewEventTitle" class="text-xl font-bold text-zinc-900 leading-tight"></h3>
+                    <p id="viewEventTime" class="text-sm text-zinc-500 mt-1 font-mono"></p>
                 </div>
                 <button onclick="closeModal()"
-                    class="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-200 rounded">✕</button>
+                    class="text-zinc-400 hover:text-zinc-600 transition-colors p-1 hover:bg-zinc-100 rounded">✕</button>
             </div>
 
-            <div class="flex-1 p-8 overflow-y-auto bg-white custom-scrollbar">
-                <div id="viewEventDesc" class="prose max-w-none text-gray-700 leading-relaxed"></div>
+            <div class="flex-1 p-6 overflow-y-auto bg-white custom-scrollbar">
+                <div id="viewEventDesc" class="markdown-preview max-w-none text-zinc-700 leading-relaxed"></div>
             </div>
 
-            <div class="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+            <div class="px-6 py-4 border-t border-zinc-100 bg-zinc-50/50 flex justify-end gap-3">
                 <button onclick="closeModal()"
-                    class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">닫기</button>
+                    class="px-4 py-2 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 rounded-md text-sm font-medium transition-colors shadow-sm">Close</button>
                 <button onclick="editFromViewModal()"
-                    class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold shadow-sm flex items-center gap-2 transition-colors">
-                    <span>✏️ 수정하기</span>
+                    class="px-4 py-2 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 text-sm font-medium shadow-sm flex items-center gap-2 transition-colors">
+                    <span>Edit Event</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Enhanced Event Edit Modal (WYSIWYG) -->
-    <div id="eventModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl shadow-2xl w-[900px] h-[85vh] flex flex-col overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                <h3 class="text-lg font-bold text-gray-800">일정 편집</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+    <!-- Enhanced Event Edit Modal (Zinc Style + Type Selector) -->
+    <div id="eventModal"
+        class="hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-lg shadow-2xl w-[800px] h-[80vh] flex flex-col overflow-hidden border border-zinc-200">
+            <div class="px-6 py-4 border-b border-zinc-200 flex justify-between items-center bg-zinc-50/50">
+                <h3 class="text-sm font-bold text-zinc-900" id="modalTitle">Edit Event</h3>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-zinc-600">✕</button>
             </div>
 
             <div class="flex-1 flex flex-col p-6 overflow-hidden bg-white">
                 <input type="hidden" id="editEventId">
 
-                <div class="grid grid-cols-12 gap-4 mb-4">
-                    <div class="col-span-12">
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">제목</label>
+                <div class="grid grid-cols-4 gap-4 mb-4">
+                    <div class="col-span-3">
+                        <label
+                            class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Title</label>
                         <input type="text" id="editEventTitle"
-                            class="w-full text-lg font-bold border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="제목 없음">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">시작 시간</label>
-                        <input type="datetime-local" id="editEventStart"
-                            class="w-full text-sm border border-gray-300 rounded px-3 py-2 bg-gray-50 outline-none">
+                            class="w-full text-base font-semibold border border-zinc-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 outline-none text-zinc-900 placeholder-zinc-400"
+                            placeholder="Event Title">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">종료 시간</label>
-                        <input type="datetime-local" id="editEventEnd"
-                            class="w-full text-sm border border-gray-300 rounded px-3 py-2 bg-gray-50 outline-none">
+                        <label
+                            class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Type</label>
+                        <select id="editEventType"
+                            class="w-full text-sm font-medium border border-zinc-200 rounded-md px-3 py-2 bg-white outline-none focus:border-zinc-400 text-zinc-900 cursor-pointer">
+                            <option value="meeting">Meeting</option>
+                            <option value="task">Task</option>
+                            <option value="summary">Summary</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="flex-1 flex flex-col min-h-0 border border-t border-gray-200 pt-2">
-                    <label class="block text-xs font-semibold text-gray-500 mb-2">상세 내용 (WYSIWYG)</label>
-                    <div id="editor" class="flex-1"></div>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Linked
+                        Context (Optional)</label>
+                    <select id="editEventSourceId"
+                        class="w-full text-sm border border-zinc-200 rounded-md px-3 py-2 bg-white outline-none focus:border-zinc-400 text-zinc-700">
+                        <option value="">-- No Context Link --</option>
+                    </select>
+                    <p class="text-xs text-zinc-400 mt-1">Link this event to a meeting summary for context</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label
+                            class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Start</label>
+                        <input type="datetime-local" id="editEventStart"
+                            class="w-full text-sm border border-zinc-200 rounded-md px-3 py-2 bg-white outline-none focus:border-zinc-400 font-mono text-zinc-600">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">End</label>
+                        <input type="datetime-local" id="editEventEnd"
+                            class="w-full text-sm border border-zinc-200 rounded-md px-3 py-2 bg-white outline-none focus:border-zinc-400 font-mono text-zinc-600">
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col min-h-0 border-t border-zinc-100 pt-4">
+                    <label
+                        class="block text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Description</label>
+                    <div id="editor" class="flex-1 border border-zinc-200 rounded-md overflow-hidden"></div>
                 </div>
             </div>
 
-            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
-                <button onclick="deleteEvent()"
-                    class="text-red-500 text-sm hover:text-red-700 font-medium px-2">삭제하기</button>
+            <div class="px-6 py-4 border-t border-zinc-200 bg-zinc-50/50 flex justify-between items-center">
+                <button onclick="deleteEvent()" id="btnDeleteEvent"
+                    class="text-red-600 text-xs hover:text-red-700 font-medium px-2 hover:bg-red-50 py-1.5 rounded transition-colors">Delete
+                    Event</button>
                 <div class="flex gap-3">
                     <button onclick="closeModal()"
-                        class="px-5 py-2 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium">취소</button>
+                        class="px-4 py-2 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 rounded-md text-sm font-medium shadow-sm transition-colors">Cancel</button>
                     <button onclick="saveEventChanges()"
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold shadow-sm">저장하기</button>
+                        class="px-4 py-2 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 text-sm font-medium shadow-sm transition-colors">Save
+                        Changes</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Editor Modal -->
+    <div id="fullscreenEditorModal"
+        class="hidden fixed inset-0 bg-zinc-900/95 backdrop-blur-sm z-[100] flex items-center justify-center p-8">
+        <div class="bg-white rounded-lg shadow-2xl w-full h-full flex flex-col overflow-hidden border border-zinc-200">
+            <div class="px-6 py-4 border-b border-zinc-200 flex justify-between items-center bg-zinc-50/50">
+                <h3 class="text-sm font-bold text-zinc-900" id="fullscreenEditorTitle">Editor</h3>
+                <button onclick="closeFullscreenEditor()" class="text-zinc-400 hover:text-zinc-600">✕</button>
+            </div>
+
+            <div class="flex-1 p-6 overflow-hidden bg-white">
+                <textarea id="fullscreenEditorContent"
+                    class="w-full h-full p-4 bg-zinc-50/50 border border-zinc-200 rounded-md focus:bg-white focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300 transition-all resize-none text-sm leading-6 text-zinc-800 placeholder-zinc-400 font-mono outline-none"></textarea>
+            </div>
+
+            <div class="px-6 py-4 border-t border-zinc-200 bg-zinc-50/50 flex justify-end gap-3">
+                <button onclick="closeFullscreenEditor()"
+                    class="px-4 py-2 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 rounded-md text-sm font-medium shadow-sm transition-colors">Cancel</button>
+                <button onclick="saveFullscreenContent()"
+                    class="px-4 py-2 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 text-sm font-medium shadow-sm transition-colors">Save</button>
             </div>
         </div>
     </div>
@@ -481,22 +592,50 @@
         let editor;
         const STORAGE_KEY_EVENTS = 'smart_scheduler_events';
         const STORAGE_KEY_NOTES = 'smart_scheduler_notes';
-
-        // 중요: 단계별 데이터 흐름을 위한 임시 저장소
         let tempAnalysisResult = null;
-
         let activeEvent = null;
         let contextEvent = null;
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        }
+
+        let fullscreenEditorSourceId = null;
+
+        function openFullscreenEditor(sourceId) {
+            fullscreenEditorSourceId = sourceId;
+            const sourceElement = document.getElementById(sourceId);
+            const modal = document.getElementById('fullscreenEditorModal');
+            const content = document.getElementById('fullscreenEditorContent');
+            const title = document.getElementById('fullscreenEditorTitle');
+
+            content.value = sourceElement.value;
+            title.textContent = sourceId === 'meetingNotes' ? 'Meeting Notes - 크게보기' : 'Summary Content - 크게보기';
+            modal.classList.remove('hidden');
+            content.focus();
+        }
+
+        function closeFullscreenEditor() {
+            document.getElementById('fullscreenEditorModal').classList.add('hidden');
+            fullscreenEditorSourceId = null;
+        }
+
+        function saveFullscreenContent() {
+            if (fullscreenEditorSourceId) {
+                const content = document.getElementById('fullscreenEditorContent').value;
+                document.getElementById(fullscreenEditorSourceId).value = content;
+                closeFullscreenEditor();
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', function () {
             editor = new toastui.Editor({
                 el: document.querySelector('#editor'),
                 height: '100%',
-                initialEditType: 'wysiwyg',
+                initialEditType: 'markdown',
                 previewStyle: 'vertical'
             });
 
-            // Load data from server
             loadDataFromServer();
 
             var calendarEl = document.getElementById('calendar');
@@ -507,11 +646,7 @@
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
-                views: {
-                    dayGridMonth: {
-                        displayEventTime: false
-                    }
-                },
+                views: { dayGridMonth: { displayEventTime: false } },
                 locale: 'ko',
                 slotMinTime: '08:00:00',
                 slotMaxTime: '22:00:00',
@@ -522,67 +657,98 @@
                 editable: true,
                 droppable: true,
                 selectable: true,
-                droppable: true,
-                selectable: true,
-                events: [], // Initial empty, will be loaded from server
-
+                events: [],
+                eventClassNames: function (arg) {
+                    if (arg.event.extendedProps.isSummary) {
+                        return ['event-type-summary'];
+                    } else if (arg.event.extendedProps.isTask) {
+                        return ['event-type-task'];
+                    } else {
+                        return ['event-type-meeting'];
+                    }
+                },
                 eventDidMount: function (info) {
                     info.el.addEventListener('contextmenu', function (e) {
                         e.preventDefault();
                         showContextMenu(e, info.event);
                     });
 
-                    let tipContent = info.event.extendedProps.description || '';
-                    if (tipContent.length > 200) tipContent = tipContent.substring(0, 200) + '...';
-
                     tippy(info.el, {
-                        content: `<div class="text-xs p-1 max-w-xs overflow-hidden"><strong class="block text-sm mb-1">${info.event.title}</strong><p class="text-gray-300 italic text-[10px]">우클릭하여 수정/삭제</p></div>`,
-                        allowHTML: true,
+                        content: `<div class="text-xs font-sans text-zinc-100">${info.event.title}</div>`,
                         theme: 'translucent',
-                        placement: 'auto',
                     });
                 },
-
                 eventDrop: function () { saveEventsToStorage(); },
                 eventResize: function () { saveEventsToStorage(); },
                 eventClick: function (info) { showReadOnlyModal(info); }
             });
             calendar.render();
+            calendar.render();
 
-            // 캘린더에 이벤트가 있으면 등록 버튼 활성화
-            checkSyncButtonState();
+            // Resizer Logic
+            const resizer = document.getElementById('resizer');
+            const sidebar = document.getElementById('sidebarPanel');
+            let isResizing = false;
 
-            // Debounced Save for Meeting Notes
+            resizer.addEventListener('mousedown', function (e) {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                resizer.classList.add('bg-zinc-300');
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (!isResizing) return;
+                const newWidth = e.clientX;
+                if (newWidth > 300 && newWidth < 800) {
+                    sidebar.style.width = newWidth + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', function (e) {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = 'default';
+                    resizer.classList.remove('bg-zinc-300');
+                    if (calendar) setTimeout(() => calendar.updateSize(), 50); // Refresh calendar
+                }
+            });
+
+
+            // Auto-resize notes area debounce
             let notesTimeout;
             document.getElementById('meetingNotes').addEventListener('input', function (e) {
                 clearTimeout(notesTimeout);
-                notesTimeout = setTimeout(() => {
-                    saveDataToServer({ meeting_notes: e.target.value });
-                }, 1000); // 1 second debounce
+                notesTimeout = setTimeout(() => { saveDataToServer({ meeting_notes: e.target.value }); }, 1000);
             });
         });
 
-        // --- Server Persistence Logic ---
+        // Server Logic 
         async function loadDataFromServer() {
             try {
                 const response = await fetch('/api/db');
                 const result = await response.json();
                 if (result.success) {
-                    // Restore Meeting Notes
-                    if (result.data.meeting_notes) {
-                        document.getElementById('meetingNotes').value = result.data.meeting_notes;
-                    }
-
-                    // Restore Calendar Events
+                    if (result.data.meeting_notes) document.getElementById('meetingNotes').value = result.data.meeting_notes;
                     if (result.data.events) {
                         calendar.removeAllEvents();
                         calendar.addEventSource(result.data.events);
+
+                        // ID Migration for legacy data
+                        let needsSave = false;
+                        calendar.getEvents().forEach(e => {
+                            if (!e.id) {
+                                e.setProp('id', generateId());
+                                needsSave = true;
+                            }
+                        });
+
+                        if (needsSave) {
+                            console.log("Migrating legacy events with new IDs...");
+                            saveEventsToStorage();
+                        }
                     }
-                    checkSyncButtonState();
                 }
-            } catch (error) {
-                console.error('Failed to load data:', error);
-            }
+            } catch (error) { console.error('Failed to load data:', error); }
         }
 
         async function saveDataToServer(data) {
@@ -592,29 +758,26 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-            } catch (error) {
-                console.error('Failed to save data:', error);
-            }
+            } catch (error) { console.error('Failed to save data:', error); }
         }
 
-        // --- Context Menu ---
+        // Context Menu Logic
         function showContextMenu(e, event) {
             contextEvent = event;
             const menu = document.getElementById('contextMenu');
+            menu.classList.remove('hidden');
             menu.style.display = 'block';
             menu.style.left = e.pageX + 'px';
             menu.style.top = e.pageY + 'px';
         }
-
-        function hideContextMenu() { document.getElementById('contextMenu').style.display = 'none'; }
-
-        function onClickContextEdit() {
-            if (contextEvent) openEditModal(contextEvent);
-            hideContextMenu();
+        function hideContextMenu() {
+            const menu = document.getElementById('contextMenu');
+            menu.classList.add('hidden');
+            menu.style.display = 'none';
         }
-
+        function onClickContextEdit() { if (contextEvent) openEditModal(contextEvent); hideContextMenu(); }
         function onClickContextDelete() {
-            if (contextEvent && confirm('삭제하시겠습니까?')) {
+            if (contextEvent && confirm('Delete this event?')) {
                 contextEvent.remove();
                 saveEventsToStorage();
                 checkSyncButtonState();
@@ -622,50 +785,212 @@
             hideContextMenu();
         }
 
-        // --- Modal ---
-        function openEditModal(event) {
-            activeEvent = event;
-            document.getElementById('editEventId').value = event.id;
-            document.getElementById('editEventTitle').value = event.title;
+        // Modals
+        function openCreateModal() {
+            activeEvent = null;
+            document.getElementById('editEventId').value = '';
+            document.getElementById('editEventTitle').value = '';
+            document.getElementById('modalTitle').innerText = 'New Event';
+            document.getElementById('editEventType').value = 'meeting'; // Default
+
+            // Default 1 hour from now
+            const now = new Date();
+            now.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0);
 
             const toLocalISO = (date) => {
                 const tzOffset = date.getTimezoneOffset() * 60000;
                 return (new Date(date - tzOffset)).toISOString().slice(0, 16);
             };
 
+            document.getElementById('editEventStart').value = toLocalISO(now);
+            document.getElementById('editEventEnd').value = toLocalISO(new Date(now.getTime() + 3600000));
+            editor.setMarkdown('');
+
+            // Hide delete during creation
+            const delBtn = document.getElementById('btnDeleteEvent');
+            if (delBtn) delBtn.classList.add('hidden');
+
+            document.getElementById('eventModal').classList.remove('hidden');
+            populateSourceIdDropdown();
+            setTimeout(() => editor.refresh(), 100);
+        }
+
+        function openEditModal(event) {
+            activeEvent = event;
+            document.getElementById('editEventId').value = event.id;
+            document.getElementById('editEventTitle').value = event.title;
+            document.getElementById('modalTitle').innerText = 'Edit Event';
+
+            // Set Type
+            let type = 'meeting';
+            if (event.extendedProps.isTask) type = 'task';
+            else if (event.extendedProps.isSummary) type = 'summary';
+            document.getElementById('editEventType').value = type;
+
+            const toLocalISO = (date) => {
+                const tzOffset = date.getTimezoneOffset() * 60000;
+                return (new Date(date - tzOffset)).toISOString().slice(0, 16);
+            };
             document.getElementById('editEventStart').value = toLocalISO(event.start);
             document.getElementById('editEventEnd').value = event.end ? toLocalISO(event.end) : toLocalISO(new Date(event.start.getTime() + 3600000));
             editor.setMarkdown(event.extendedProps.description || '');
+
+            // Populate and set sourceId dropdown
+            populateSourceIdDropdown();
+            document.getElementById('editEventSourceId').value = event.extendedProps.sourceId || '';
+
+            // Show delete
+            const delBtn = document.getElementById('btnDeleteEvent');
+            if (delBtn) delBtn.classList.remove('hidden');
+
             document.getElementById('eventModal').classList.remove('hidden');
             setTimeout(() => editor.refresh(), 100);
         }
 
-        function closeModal() { document.getElementById('eventModal').classList.add('hidden'); activeEvent = null; }
+        function populateSourceIdDropdown() {
+            const dropdown = document.getElementById('editEventSourceId');
+            dropdown.innerHTML = '<option value="">-- No Context Link --</option>';
+
+            const summaries = calendar.getEvents().filter(e => e.extendedProps.isSummary);
+            summaries.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;  // Use Summary's unique ID
+                option.textContent = s.title;
+                dropdown.appendChild(option);
+            });
+        }
+
+        function showReadOnlyModal(info) {
+            activeEvent = info.event;
+            document.getElementById('viewEventTitle').innerText = activeEvent.title;
+
+            const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            const startStr = activeEvent.start.toLocaleString(undefined, options);
+            const endStr = activeEvent.end ? activeEvent.end.toLocaleString(undefined, options) : '';
+            document.getElementById('viewEventTime').innerText = startStr + (endStr ? ' - ' + endStr : '');
+
+            // Safe Markdown Parsing
+            let desc = activeEvent.extendedProps.description || '';
+            const safeParse = (text) => {
+                try {
+                    if (typeof marked !== 'undefined') {
+                        if (typeof marked.parse === 'function') return marked.parse(text);
+                        if (typeof marked === 'function') return marked(text);
+                    }
+                    return text.replace(/\\n/g, '<br>');
+                } catch (e) { return text.replace(/\\n/g, '<br>'); }
+            };
+
+            // Context parsing
+            if (desc.includes('[Context]')) {
+                const parts = desc.split('[Context]');
+                const mainContent = safeParse(parts[0].trim());
+                const contextContent = parts[1] ? parts[1].trim() : '';
+                desc = `<div>${mainContent}</div>
+                <div class="mt-4 p-3 bg-zinc-50 rounded border border-zinc-100">
+                    <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">Original Text</span>
+                    <div class="text-xs text-zinc-600 italic">"${contextContent}"</div>
+                </div>`;
+            } else {
+                desc = safeParse(desc);
+            }
+
+            // Link to Source Summary
+            if (activeEvent.extendedProps.sourceId && !activeEvent.extendedProps.isSummary) {
+                const summaryEvent = calendar.getEvents().find(e =>
+                    e.extendedProps.isSummary &&
+                    e.id &&
+                    e.id === activeEvent.extendedProps.sourceId
+                );
+                if (summaryEvent) {
+                    desc += `<div class="mt-4 pt-4 border-t border-zinc-100">
+                        <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">Context</span>
+                        <div>
+                            <a href="#" onclick="openSummary('${summaryEvent.id}'); return false;" class="text-sm text-zinc-900 hover:text-blue-600 hover:underline font-medium inline-flex items-center gap-1 group">
+                                <span class="group-hover:scale-110 transition-transform">📄</span>
+                                ${summaryEvent.title}
+                            </a>
+                        </div>
+                     </div>`;
+                }
+            }
+
+            document.getElementById('viewEventDesc').innerHTML = desc;
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+
+        function openSummary(id) {
+            const event = calendar.getEventById(id);
+            if (event) showReadOnlyModal({ event: event });
+        }
+
+        function closeModal() {
+            document.getElementById('eventModal').classList.add('hidden');
+            document.getElementById('viewModal').classList.add('hidden');
+            activeEvent = null;
+        }
 
         function saveEventChanges() {
-            if (activeEvent) {
-                const newTitle = document.getElementById('editEventTitle').value;
-                const newDesc = editor.getMarkdown();
-                const newStart = new Date(document.getElementById('editEventStart').value);
-                const newEnd = new Date(document.getElementById('editEventEnd').value);
+            const newTitle = document.getElementById('editEventTitle').value;
+            const newDesc = editor.getMarkdown();
+            const newStart = new Date(document.getElementById('editEventStart').value);
+            const newEnd = new Date(document.getElementById('editEventEnd').value);
+            const newType = document.getElementById('editEventType').value;
 
+            if (!newTitle.trim()) { alert('Please enter a title'); return; }
+
+            const props = {
+                description: newDesc,
+                isMeeting: newType === 'meeting',
+                isTask: newType === 'task',
+                isSummary: newType === 'summary',
+                sourceId: document.getElementById('editEventSourceId').value || undefined
+            };
+
+            if (activeEvent) {
+                // Update
                 activeEvent.setProp('title', newTitle);
                 activeEvent.setExtendedProp('description', newDesc);
+
+                // Explicitly update all boolean props to ensure reactivity
+                activeEvent.setExtendedProp('isMeeting', props.isMeeting);
+                activeEvent.setExtendedProp('isTask', props.isTask);
+                activeEvent.setExtendedProp('isSummary', props.isSummary);
+                activeEvent.setExtendedProp('sourceId', props.sourceId);
+
                 activeEvent.setStart(newStart);
                 activeEvent.setEnd(newEnd);
-
-                saveEventsToStorage();
-                closeModal();
-                calendar.gotoDate(newStart);
+            } else {
+                // Create
+                calendar.addEvent({
+                    title: newTitle,
+                    start: newStart,
+                    end: newEnd,
+                    description: newDesc,
+                    extendedProps: props
+                });
             }
+            // Goto date
+            calendar.gotoDate(newStart);
+            saveEventsToStorage();
+
+            // Force close modal
+            document.getElementById('eventModal').classList.add('hidden');
+            activeEvent = null;
         }
 
         function deleteEvent() {
-            if (activeEvent && confirm('삭제하시겠습니까?')) {
+            if (activeEvent && confirm('Delete this event?')) {
                 activeEvent.remove();
                 saveEventsToStorage();
                 checkSyncButtonState();
                 closeModal();
+            }
+        }
+        function editFromViewModal() {
+            if (activeEvent) {
+                document.getElementById('viewModal').classList.add('hidden');
+                openEditModal(activeEvent);
             }
         }
 
@@ -678,31 +1003,43 @@
                 color: e.backgroundColor,
                 extendedProps: e.extendedProps
             }));
-
-            // Save to Server
             saveDataToServer({ events: events });
-
-            checkSyncButtonState();
         }
 
-        function checkSyncButtonState() {
-            const btn = document.getElementById('syncBtn');
-            const hasEvents = calendar.getEvents().length > 0;
-            if (hasEvents) {
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        function toggleFilter(type) {
+            const btn = document.getElementById('filter-' + type);
+            const isActive = btn.classList.contains('active');
+            if (isActive) {
+                btn.classList.remove('active');
+                btn.classList.add('inactive');
             } else {
-                btn.disabled = true;
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.classList.remove('inactive');
+                btn.classList.add('active');
             }
+
+            const isSummaryHidden = document.getElementById('filter-summary').classList.contains('inactive');
+            const isTaskHidden = document.getElementById('filter-task').classList.contains('inactive');
+            const isMeetingHidden = document.getElementById('filter-meeting').classList.contains('inactive');
+
+            const styleId = 'filter-styles';
+            let styleEl = document.getElementById(styleId);
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = styleId;
+                document.head.appendChild(styleEl);
+            }
+
+            let css = '';
+            if (isSummaryHidden) css += '.event-type-summary {display: none !important; } ';
+            if (isTaskHidden) css += '.event-type-task {display: none !important; } ';
+            if (isMeetingHidden) css += '.event-type-meeting {display: none !important; } ';
+
+            styleEl.innerHTML = css;
         }
 
-
-
-        // --- STEP 1: Analyze ---
         async function analyzeNotes() {
             const notes = document.getElementById('meetingNotes').value;
-            if (!notes.trim()) { alert('내용을 입력해주세요.'); return; }
+            if (!notes.trim()) { alert('Please enter notes.'); return; }
 
             document.getElementById('analyzeBtn').disabled = true;
             document.getElementById('loadingState').classList.remove('hidden');
@@ -716,683 +1053,240 @@
                 });
 
                 const data = await response.json();
-
                 if (data.success) {
                     tempAnalysisResult = data.analysis;
                     document.getElementById('previewStage').classList.remove('hidden');
                     renderStagingArea(data.analysis);
-                } else {
-                    alert('오류: ' + data.error);
-                }
-
-            } catch (error) {
-                alert('서버 오류: ' + error);
-            } finally {
+                } else { alert('Error: ' + data.error); }
+            } catch (error) { alert('Server Error: ' + error); }
+            finally {
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('analyzeBtn').disabled = false;
             }
         }
 
-        // --- Staging Area Rendering ---
-        // --- Staging Area Rendering (Refined & Clean UI) ---
         function renderStagingArea(analysis) {
             const container = document.getElementById('summaryPreview');
-            container.innerHTML = ''; // Clear previous
-
-            // 1. Summary Section (Step 2: Meeting Summary)
-            // Full width to match input area, clean simple header.
-            const summaryHTML = `
-                <div class="mb-8">
-                    <div class="flex items-center gap-2 mb-3">
-                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold">2</span>
-                         <h3 class="text-lg font-bold text-gray-800">회의록 요약 (Summary)</h3>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden group hover:shadow-md transition-shadow duration-300">
-                        <div class="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
-                             <label class="flex items-center space-x-2 cursor-pointer select-none">
-                                <input type="checkbox" id="checkSummary" checked class="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 border-gray-300">
-                                <span class="font-semibold text-gray-700">캘린더 설명에 포함</span>
-                            </label>
-                            <span class="text-xs text-gray-400">Markdown Supported</span>
-                        </div>
-                        <div class="p-0">
-                            <textarea id="editSummary" 
-                                class="w-full h-[400px] p-5 border-none text-sm leading-relaxed text-gray-700 placeholder-gray-400 focus:ring-0 focus:outline-none resize-y bg-white font-mono"
-                                placeholder="요약 내용이 여기에 표시됩니다...">${analysis.summary}</textarea>
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.innerHTML += summaryHTML;
-
-            // Default Scheduling Logic (Tomorrow 9 AM start)
-            let baseDate = new Date();
-            baseDate.setDate(baseDate.getDate() + 1);
-            baseDate.setHours(9, 0, 0, 0);
-
-            // Container for Step 3: Tasks & Meetings (Combined)
-            let step3HTML = `
-                <div class="mb-8">
-                    <div class="flex items-center gap-2 mb-3">
-                         <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold">3</span>
-                         <h3 class="text-lg font-bold text-gray-800">태스크 & 미팅 (Tasks & Meetings)</h3>
-                    </div>
-                    <div class="space-y-6">
-            `;
-
-            // 2. Tasks Section (Inside Step 3)
-            if (analysis.todo_tasks && analysis.todo_tasks.length > 0) {
-                step3HTML += `
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div class="px-5 py-3 border-b border-gray-50 bg-blue-50/30 flex items-center gap-2">
-                            <span class="text-blue-600 font-bold text-sm">Tasks</span>
-                            <span class="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">${analysis.todo_tasks.length}</span>
-                        </div>
-                        <div class="divide-y divide-gray-100">
-                `;
-
-                analysis.todo_tasks.forEach((task, idx) => {
-                    // Logic: Auto-increment time for each task
-                    let taskDate = new Date(baseDate);
-                    taskDate.setHours(baseDate.getHours() + idx);
-                    if (taskDate.getHours() >= 18) {
-                        taskDate.setDate(taskDate.getDate() + 1);
-                        taskDate.setHours(9 + (idx % 9), 0, 0);
-                    }
-                    const yyyy = taskDate.getFullYear();
-                    const mm = String(taskDate.getMonth() + 1).padStart(2, '0');
-                    const dd = String(taskDate.getDate()).padStart(2, '0');
-                    const dateStr = `${yyyy}-${mm}-${dd}`;
-                    const timeStr = String(taskDate.getHours()).padStart(2, '0') + ':00';
-
-                    step3HTML += `
-                        <div class="p-5 hover:bg-gray-50 transition-colors group">
-                            <div class="flex items-start gap-3">
-                                <div class="pt-1">
-                                    <input type="checkbox" id="checkTask_${idx}" checked class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer">
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <!-- Content (Title & Desc) -->
-                                    <div class="flex flex-col gap-1 mb-2">
-                                        <input type="text" id="valTaskTitle_${idx}" value="${task.title}" 
-                                            class="w-full font-bold text-gray-800 text-base bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300 group-hover:text-blue-700 transition-colors" placeholder="태스크 제목">
-                                        <input type="text" id="valTaskDesc_${idx}" value="${task.description}" 
-                                            class="w-full text-sm text-gray-500 bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300 resize-none" placeholder="상세 내용">
-                                        <input type="hidden" id="valTaskContext_${idx}" value="${task.context || ''}">
-                                        <input type="hidden" id="valTaskTime_${idx}" value="${timeStr}">
-                                    </div>
-                                    
-                                    <!-- Date Control (Aligned Right Below Content) -->
-                                    <div class="flex justify-end pt-2 border-t border-gray-50 border-dashed mt-1">
-                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs text-gray-400 font-medium">Date:</span>
-                                            <input type="date" id="valTaskDate_${idx}" value="${dateStr}" 
-                                                class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-600 font-mono focus:border-blue-300 focus:ring-1 focus:ring-blue-200 transition-all cursor-pointer hover:border-gray-300">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                step3HTML += `</div></div>`;
-            }
-
-            // 3. Meetings Section (Inside Step 3)
-            if (analysis.schedule_items && analysis.schedule_items.length > 0) {
-                step3HTML += `
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div class="px-5 py-3 border-b border-gray-50 bg-green-50/30 flex items-center gap-2">
-                            <span class="text-green-600 font-bold text-sm">Meetings</span>
-                            <span class="bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded-full">${analysis.schedule_items.length}</span>
-                        </div>
-                        <div class="divide-y divide-gray-100">
-                `;
-                analysis.schedule_items.forEach((item, idx) => {
-                    step3HTML += `
-                         <div class="p-5 hover:bg-gray-50 transition-colors group">
-                            <div class="flex items-start gap-3">
-                                <div class="pt-1">
-                                    <input type="checkbox" id="checkSched_${idx}" checked class="w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer">
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <!-- Content (Title & Desc) -->
-                                    <div class="flex flex-col gap-1 mb-2">
-                                        <input type="text" id="valSchedTitle_${idx}" value="${item.title}" 
-                                             class="w-full font-bold text-gray-800 text-base bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300 group-hover:text-green-700 transition-colors" placeholder="미팅 제목">
-                                        <input type="text" id="valSchedDesc_${idx}" value="${item.description}" 
-                                            class="w-full text-sm text-gray-500 bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="상세 내용">
-                                        <input type="hidden" id="valSchedContext_${idx}" value="${item.context || ''}">
-                                        <input type="hidden" id="valSchedTime_${idx}" value="${item.time}">
-                                    </div>
-                                    
-                                     <!-- Date Control (Aligned Right Below Content) -->
-                                    <div class="flex justify-end pt-2 border-t border-gray-50 border-dashed mt-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs text-gray-400 font-medium">Date:</span>
-                                            <input type="date" id="valSchedDate_${idx}" value="${item.date}" 
-                                                class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-600 font-mono focus:border-green-300 focus:ring-1 focus:ring-green-200 transition-all cursor-pointer hover:border-gray-300">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                step3HTML += `</div></div>`;
-            }
-
-            step3HTML += `</div></div>`; // Close Step 3 container
-            container.innerHTML += step3HTML;
-        }
-
-        // --- STEP 2: Apply to Calendar (No Confirmation) ---
-        function applyToCalendar() {
-            if (!tempAnalysisResult) {
-                alert("분석된 내용이 없습니다.");
-                return;
-            }
-
-            // Collect Data from Staging Area
-            const finalData = { ...tempAnalysisResult }; // Clone base structure
+            container.innerHTML = '';
 
             // 1. Summary
+            const summaryHTML = `
+                                    <div class="mb-6 rounded-md border border-zinc-200 bg-zinc-50/50 p-4">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center gap-2">
+                                                <input type="checkbox" id="checkSummary" checked class="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900">
+                                                    <h4 class="text-sm font-semibold text-zinc-900">Meeting Summary</h4>
+                                            </div>
+                                            <span class="text-[10px] uppercase font-bold text-zinc-400">Markdown</span>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Title</label>
+                                            <input type="text" id="editSummaryTitle" value="${analysis.meeting_title || 'Meeting Summary'}" 
+                                                class="w-full text-sm bg-white border border-zinc-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-200 text-zinc-900 font-medium">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Date</label>
+                                            <input type="date" id="editSummaryDate" value="${analysis.meeting_date || new Date().toISOString().slice(0, 10)}" 
+                                                class="w-full text-sm bg-white border border-zinc-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-200 text-zinc-700 font-mono">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Content</label>
+                                            <div class="relative group">
+                                                <textarea id="editSummary" class="w-full h-64 text-sm bg-white border border-zinc-200 rounded p-3 focus:outline-none focus:ring-2 focus:ring-zinc-200 text-zinc-700 font-mono">${analysis.summary}</textarea>
+                                                <div class="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onclick="openFullscreenEditor('editSummary')" type="button"
+                                                        class="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors px-2 py-1 hover:bg-zinc-100 rounded flex items-center gap-1">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                                                        </svg>
+                                                        <span>크게보기</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    `;
+            container.innerHTML += summaryHTML;
+
+            // Defaults
+            let baseDate = new Date();
+            baseDate.setDate(baseDate.getDate() + 1);
+            baseDate.setHours(10, 0, 0, 0);
+            const defaultDateStr = baseDate.toISOString().slice(0, 10);
+            const defaultTimeStr = "10:00";
+
+            // 2. Tasks
+            if (analysis.todo_tasks && analysis.todo_tasks.length > 0) {
+                let taskHTML = `<div class="mb-4"><h4 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Tasks (${analysis.todo_tasks.length})</h4><div class="space-y-2">`;
+                analysis.todo_tasks.forEach((task, idx) => {
+                    const dVal = task.deadline || defaultDateStr;
+                    taskHTML += `
+                                            <div class="flex items-start gap-3 p-3 bg-white border border-zinc-100 rounded-md shadow-sm group hover:border-zinc-300 transition-colors">
+                                                <input type="checkbox" id="checkTask_${idx}" checked class="mt-1 w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900">
+                                                    <div class="flex-1 min-w-0">
+                                                        <input type="text" id="valTaskTitle_${idx}" value="${task.title}" class="w-full text-sm font-medium text-zinc-900 bg-transparent border-none p-0 focus:ring-0 placeholder-zinc-300 mb-1">
+                                                            <input type="text" id="valTaskDesc_${idx}" value="${task.description}" class="w-full text-xs text-zinc-500 bg-transparent border-none p-0 focus:ring-0 placeholder-zinc-300">
+                                                                <input type="hidden" id="valTaskContext_${idx}" value="${task.context || ''}">
+                                                                    <div class="flex gap-2 mt-2">
+                                                                        <input type="date" id="valTaskDate_${idx}" value="${dVal}" class="text-[10px] bg-zinc-50 border border-zinc-200 rounded px-1 text-zinc-600 outline-none">
+                                                                            <input type="time" id="valTaskTime_${idx}" value="${defaultTimeStr}" class="text-[10px] bg-zinc-50 border border-zinc-200 rounded px-1 text-zinc-600 outline-none">
+                                                                            </div>
+                                                                    </div>
+                                                                </div>
+                                                                `;
+                });
+                taskHTML += `</div></div>`;
+                container.innerHTML += taskHTML;
+            }
+
+            // 3. Meetings
+            if (analysis.schedule_items && analysis.schedule_items.length > 0) {
+                let meetHTML = `<div class="mb-4"><h4 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Meetings (${analysis.schedule_items.length})</h4><div class="space-y-2">`;
+                analysis.schedule_items.forEach((item, idx) => {
+                    const dVal = item.date || defaultDateStr;
+                    const tVal = item.time || defaultTimeStr;
+                    meetHTML += `
+                                                            <div class="flex items-start gap-3 p-3 bg-white border border-zinc-100 rounded-md shadow-sm group hover:border-zinc-300 transition-colors">
+                                                                <input type="checkbox" id="checkSched_${idx}" checked class="mt-1 w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900">
+                                                                    <div class="flex-1 min-w-0">
+                                                                        <input type="text" id="valSchedTitle_${idx}" value="${item.title}" class="w-full text-sm font-medium text-zinc-900 bg-transparent border-none p-0 focus:ring-0 placeholder-zinc-300 mb-1">
+                                                                            <input type="text" id="valSchedDesc_${idx}" value="${item.description}" class="w-full text-xs text-zinc-500 bg-transparent border-none p-0 focus:ring-0 placeholder-zinc-300">
+                                                                                <div class="flex gap-2 mt-2">
+                                                                                    <input type="date" id="valSchedDate_${idx}" value="${dVal}" class="text-[10px] bg-zinc-50 border border-zinc-200 rounded px-1 text-zinc-600 outline-none">
+                                                                                        <input type="time" id="valSchedTime_${idx}" value="${tVal}" class="text-[10px] bg-zinc-50 border border-zinc-200 rounded px-1 text-zinc-600 outline-none">
+                                                                                        </div>
+                                                                                        <input type="hidden" id="valSchedContext_${idx}" value="${item.context || ''}">
+                                                                                        </div>
+                                                                                </div>
+                                                                                `;
+                });
+                meetHTML += `</div></div>`;
+                container.innerHTML += meetHTML;
+            }
+        }
+
+        function applyToCalendar() {
+            if (!tempAnalysisResult) return;
+
+            const finalData = { ...tempAnalysisResult };
+            const batchId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            const meetingTitle = document.getElementById('editSummaryTitle')?.value || tempAnalysisResult.meeting_title || 'Meeting Summary';
+
+            // Summary
             const summaryCheck = document.getElementById('checkSummary');
             if (summaryCheck && summaryCheck.checked) {
                 finalData.summary = document.getElementById('editSummary').value;
+                finalData.summaryDate = document.getElementById('editSummaryDate').value;
                 finalData.includeSummary = true;
-            } else {
-                finalData.includeSummary = false;
-            }
+            } else { finalData.includeSummary = false; }
 
-            // 2. Tasks
+            // Tasks
             finalData.todo_tasks = [];
             if (tempAnalysisResult.todo_tasks) {
                 tempAnalysisResult.todo_tasks.forEach((_, idx) => {
-                    const chk = document.getElementById(`checkTask_${idx}`);
-                    if (chk && chk.checked) {
-                        const baseTitle = document.getElementById(`valTaskTitle_${idx}`).value;
-                        const baseDesc = document.getElementById(`valTaskDesc_${idx}`).value;
-                        const context = document.getElementById(`valTaskContext_${idx}`).value;
-
-                        // Append context to description if exists
-                        const fullDesc = context ? `${baseDesc}\n\n[Context]\n${context}` : baseDesc;
-
+                    if (document.getElementById(`checkTask_${idx}`)?.checked) {
+                        const title = document.getElementById(`valTaskTitle_${idx}`).value;
+                        const desc = document.getElementById(`valTaskDesc_${idx}`).value;
+                        const ctx = document.getElementById(`valTaskContext_${idx}`).value;
                         finalData.todo_tasks.push({
-                            title: baseTitle,
-                            description: fullDesc,
+                            title: title,
+                            description: ctx ? `${desc}\n\n[Context]\n${ctx}` : desc,
                             date: document.getElementById(`valTaskDate_${idx}`).value,
-                            time: document.getElementById(`valTaskTime_${idx}`).value
+                            time: document.getElementById(`valTaskTime_${idx}`).value,
+                            sourceId: batchId,
+                            sourceTitle: meetingTitle
                         });
                     }
                 });
             }
 
-            // 3. Schedules
+            // Meetings
             finalData.schedule_items = [];
             if (tempAnalysisResult.schedule_items) {
                 tempAnalysisResult.schedule_items.forEach((_, idx) => {
-                    const chk = document.getElementById(`checkSched_${idx}`);
-                    if (chk && chk.checked) {
-                        const baseTitle = document.getElementById(`valSchedTitle_${idx}`).value;
-                        const baseDesc = document.getElementById(`valSchedDesc_${idx}`).value;
-                        const context = document.getElementById(`valSchedContext_${idx}`).value;
-                        // Append context to description if exists
-                        const fullDesc = context ? `${baseDesc}\n\n[Context]\n${context}` : baseDesc;
-
+                    if (document.getElementById(`checkSched_${idx}`)?.checked) {
+                        const title = document.getElementById(`valSchedTitle_${idx}`).value;
+                        const date = document.getElementById(`valSchedDate_${idx}`).value;
+                        const time = document.getElementById(`valSchedTime_${idx}`).value;
                         finalData.schedule_items.push({
-                            title: baseTitle,
-                            date: document.getElementById(`valSchedDate_${idx}`).value,
-                            time: document.getElementById(`valSchedTime_${idx}`).value,
-                            description: fullDesc,
-                            duration_minutes: 60
+                            title: title,
+                            date: date, time: time,
+                            description: document.getElementById(`valSchedDesc_${idx}`).value,
+                            duration_minutes: 60,
+                            sourceId: batchId,
+                            sourceTitle: meetingTitle
                         });
                     }
                 });
             }
 
-            // Validation
-            if (!finalData.includeSummary && finalData.todo_tasks.length === 0 && finalData.schedule_items.length === 0) {
-                alert("선택된 항목이 없습니다. 캘린더에 추가할 항목을 체크해주세요.");
-                return;
-            }
-
-            // Direct Apply (No Confirm Dialog)
-            visualizeCalendarV3(finalData);
-            document.getElementById('previewStage').classList.add('hidden'); // Clear staging
-
-            // Show subtle feedback
-            const btn = document.querySelector('button[onclick="applyToCalendar()"]');
-            const originalText = btn.innerHTML;
-            btn.innerText = "✅ 반영되었습니다!";
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-            }, 2000);
-        }
-
-        // --- STEP 3: Sync ---
-        async function syncToCalcom() {
-            const events = calendar.getEvents().map(e => ({
-                title: e.title,
-                start: e.startStr,
-                end: e.endStr,
-                description: e.extendedProps.description
-            }));
-
-            if (events.length === 0) return;
-
-            const btn = document.getElementById('syncBtn');
-            const resultDiv = document.getElementById('syncResultConfig');
-            const resultMsg = document.getElementById('syncResultText');
-
-            const origText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span>⏳ 저장 중...</span>';
-            resultDiv.classList.add('hidden');
-
             try {
-                const response = await fetch('/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ calendar_events: events })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    const count = (data.sync_results.tasks_created?.length || 0) + (data.sync_results.events_created?.length || 0);
-                    resultMsg.innerText = `✅ Cal.com에 ${count}건 등록 완료!`;
-                    resultDiv.classList.remove('hidden');
-                } else {
-                    alert('오류: ' + data.error);
-                }
-
-            } catch (error) {
-                alert('서버 오류: ' + error);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = origText;
-            }
-        }
-
-        function visualizeCalendar(analysis) {
-            // 이번에는 removeAllEvents()를 호출하지 않고 추가(Add) 모드로 갈 수도 있지만,
-            // 사용자가 "새 분석"을 했다면 보통 리셋을 원할 수 있음. 
-            // 하지만 사용자가 "기존 일정 유지"를 원할 수도 있으니 removeAllEvents는 선택적이어야 하는데,
-            // 일단은 깔끔한 workflow를 위해 기존 일정 유지하며 추가. (사용자가 원하면 전체삭제 버튼 쓰면 됨)
-
-            // 1. 회의록 요약 이벤트
-            let meetingDate = new Date();
-            meetingDate.setHours(new Date().getHours() + 1, 0, 0, 0);
-
-            const patterns = [/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/, /(\d{4})\.(\d{1,2})\.(\d{1,2})/, /(\d{4})-(\d{1,2})-(\d{1,2})/];
-            for (let pattern of patterns) {
-                const match = analysis.summary.match(pattern);
-                if (match) {
-                    meetingDate = new Date(match[1], match[2] - 1, match[3]);
-                    meetingDate.setHours(10, 0, 0, 0);
-                    break;
-                }
-            }
-            let summaryEnd = new Date(meetingDate);
-            summaryEnd.setHours(summaryEnd.getHours() + 1);
-            let summaryTitle = analysis.meeting_title || `📝 회의록 요약`;
-            let metaHeader = `**참석자**: ${analysis.participants?.join(', ') || '미정'}\n**핵심 주제**: ${analysis.key_decisions?.join(', ') || '없음'}\n\n---\n\n`;
-
-            calendar.addEvent({
-                title: summaryTitle,
-                start: meetingDate,
-                end: summaryEnd,
-                color: '#8B5CF6',
-                description: metaHeader + analysis.summary,
-                extendedProps: { description: metaHeader + analysis.summary, isSummary: true }
-            });
-
-            // 2. 태스크
-            const tasks = analysis.todo_tasks || [];
-            if (tasks.length > 0) {
-                let startTime = new Date(meetingDate);
-                startTime.setDate(startTime.getDate() + 1);
-                startTime.setHours(9, 0, 0, 0);
-
-                tasks.forEach((task, index) => {
-                    let eventStart = new Date(startTime);
-                    eventStart.setHours(eventStart.getHours() + index);
-                    if (eventStart.getHours() >= 18) {
-                        eventStart.setDate(eventStart.getDate() + 1);
-                        eventStart.setHours(9 + (index % 9), 0, 0);
-                    }
-                    let eventEnd = new Date(eventStart);
-                    eventEnd.setHours(eventEnd.getHours() + 1);
-
+                // Visualizer
+                // 1. Summary
+                if (finalData.includeSummary) {
+                    let d = new Date(finalData.summaryDate || new Date().toISOString().slice(0, 10));
+                    d.setHours(9, 0, 0);
                     calendar.addEvent({
-                        title: `[T] ${task.title}`,
-                        start: eventStart,
-                        end: eventEnd,
-                        color: '#3B82F6',
-                        description: task.description,
-                        extendedProps: { description: task.description }
-                    });
-                });
-            }
-
-            // 3. 미팅
-            const schedules = analysis.schedule_items || [];
-            schedules.forEach(item => {
-                if (item.date && item.time) {
-                    let start = new Date(`${item.date}T${item.time}`);
-                    let end = new Date(start);
-                    end.setMinutes(end.getMinutes() + (item.duration_minutes || 60));
-
-                    calendar.addEvent({
-                        title: `[M] ${item.title}`,
-                        start: start,
-                        end: end,
-                        color: '#10B981',
-                        description: item.description,
-                        extendedProps: { description: item.description }
+                        id: generateId(),
+                        title: meetingTitle,
+                        start: d,
+                        allDay: true,
+                        description: finalData.summary,
+                        extendedProps: { description: finalData.summary, isSummary: true, sourceId: batchId }
                     });
                 }
-            });
-            saveEventsToStorage();
-        }
-        // --- NEW: Read-Only View Logic ---
-        function showReadOnlyModal(info) {
-            activeEvent = info.event;
-            const props = activeEvent.extendedProps;
-
-            document.getElementById('viewEventTitle').innerText = activeEvent.title;
-
-            // Format time range
-            const start = activeEvent.start;
-            const end = activeEvent.end || start;
-            const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            const timeStr = start.toLocaleString(undefined, options) + ' ~ ' + end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('viewEventTime').innerText = timeStr;
-
-            // Render Description (Markdown support)
-            let desc = props.description || '';
-
-            // Helper to safe parse markdown
-            const safeParse = (text) => {
-                try {
-                    if (typeof marked !== 'undefined') {
-                        if (typeof marked.parse === 'function') return marked.parse(text);
-                        if (typeof marked === 'function') return marked(text);
-                    }
-                    console.warn('marked library not found, falling back to plain text');
-                    return text.replace(/\n/g, '<br>');
-                } catch (e) {
-                    console.error('Markdown parsing error:', e);
-                    return text.replace(/\n/g, '<br>');
-                }
-            };
-
-            // Handle [Context] formatting logic
-            if (desc.includes('[Context]')) {
-                const parts = desc.split('[Context]');
-                let mainContent = parts[0].trim();
-                let contextContent = parts[1] ? parts[1].trim() : '';
-
-                if (contextContent) {
-                    const parsedMain = safeParse(mainContent);
-                    desc = `
-                        <div>${parsedMain}</div>
-                        <div class="context-block">
-                            <span class="context-label">📌 관련 문맥 (Context)</span>
-                            <div class="text-gray-600">${contextContent}</div>
-                        </div>
-                     `;
-                } else {
-                    desc = safeParse(desc);
-                }
-                document.getElementById('viewEventDesc').innerHTML = desc;
-            } else {
-                document.getElementById('viewEventDesc').innerHTML = safeParse(desc);
-            }
-
-            document.getElementById('viewModal').classList.remove('hidden');
-        }
-
-        function editFromViewModal() {
-            document.getElementById('viewModal').classList.add('hidden');
-            openEditModal(activeEvent);
-        }
-
-        // Override closeModal to handle both
-        function closeModal() {
-            document.getElementById('eventModal').classList.add('hidden');
-            document.getElementById('viewModal').classList.add('hidden');
-        }
-
-        // --- NEW: V2 Visualization (Corrected for Staging Area) ---
-        function visualizeCalendarV2(analysis) {
-            // 1. 회의록 요약 이벤트
-            if (analysis.includeSummary) {
-                let meetingDate = new Date();
-                meetingDate.setDate(meetingDate.getDate() + 1);
-                meetingDate.setHours(10, 0, 0, 0);
-
-                const patterns = [/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/, /(\d{4})\.(\d{1,2})\.(\d{1,2})/, /(\d{4})-(\d{1,2})-(\d{1,2})/];
-                for (let pattern of patterns) {
-                    const match = analysis.summary.match(pattern);
-                    if (match) {
-                        meetingDate = new Date(match[1], match[2] - 1, match[3]);
-                        meetingDate.setHours(10, 0, 0, 0);
-                        break;
-                    }
-                }
-
-                let summaryEnd = new Date(meetingDate);
-                summaryEnd.setHours(summaryEnd.getHours() + 1);
-                let summaryTitle = analysis.meeting_title || `📝 회의록 요약`;
-                let metaHeader = `**참석자**: ${analysis.participants?.join(', ') || '미정'}\n**핵심 주제**: ${analysis.key_decisions?.join(', ') || '없음'}\n\n---\n\n`;
-
-                calendar.addEvent({
-                    title: summaryTitle,
-                    start: meetingDate,
-                    end: summaryEnd,
-                    color: '#8B5CF6',
-                    description: metaHeader + analysis.summary,
-                    extendedProps: { description: metaHeader + analysis.summary, isSummary: true }
+                // 2. Tasks
+                finalData.todo_tasks.forEach(t => {
+                    try {
+                        let start = new Date(`${t.date}T${t.time}`);
+                        if (isNaN(start.getTime())) start = new Date();
+                        let end = new Date(start.getTime() + 3600000);
+                        calendar.addEvent({
+                            id: generateId(),
+                            title: t.title,
+                            start: start, end: end,
+                            description: t.description,
+                            extendedProps: { description: t.description, isTask: true, sourceId: t.sourceId, sourceTitle: t.sourceTitle }
+                        });
+                    } catch (e) { console.error("Task add error", e); }
                 });
-            }
-
-            // 2. 태스크
-            const tasks = analysis.todo_tasks || [];
-            if (tasks.length > 0) {
-                let startTime = new Date();
-                startTime.setDate(startTime.getDate() + 1);
-                startTime.setHours(9, 0, 0, 0);
-
-                tasks.forEach((task, index) => {
-                    let eventStart = new Date(startTime);
-                    eventStart.setHours(eventStart.getHours() + index);
-
-                    if (eventStart.getHours() >= 18) {
-                        eventStart.setDate(eventStart.getDate() + 1);
-                        eventStart.setHours(9 + (index % 9), 0, 0);
-                    }
-                    let eventEnd = new Date(eventStart);
-                    eventEnd.setHours(eventEnd.getHours() + 1);
-
-                    calendar.addEvent({
-                        title: `[T] ${task.title}`,
-                        start: eventStart,
-                        end: eventEnd,
-                        color: '#3B82F6',
-                        description: task.description,
-                        extendedProps: { description: task.description }
-                    });
-                });
-            }
-
-            // 3. 일정 아이템 추가
-            const schedules = analysis.schedule_items || [];
-            schedules.forEach(item => {
-                if (item.date && item.time) {
-                    let start = new Date(`${item.date}T${item.time}`);
-                    let end = new Date(start);
-                    end.setMinutes(end.getMinutes() + (item.duration_minutes || 60));
-
-                    calendar.addEvent({
-                        title: `[M] ${item.title}`,
-                        start: start,
-                        end: end,
-                        color: '#10B981',
-                        description: item.description,
-                        extendedProps: { description: item.description }
-                    });
-                }
-            });
-
-            saveEventsToStorage();
-        }
-        // --- NEW: V3 Visualization (With Explicit Date Support) ---
-        // --- NEW: V3 Visualization (With Explicit Date Support & Filtering Classes) ---
-        function visualizeCalendarV3(analysis) {
-            // 1. 회의록 요약 이벤트
-            if (analysis.includeSummary) {
-                let meetingDate = new Date();
-                meetingDate.setDate(meetingDate.getDate() + 1);
-                meetingDate.setHours(10, 0, 0, 0);
-
-                const patterns = [/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/, /(\d{4})\.(\d{1,2})\.(\d{1,2})/, /(\d{4})-(\d{1,2})-(\d{1,2})/];
-                for (let pattern of patterns) {
-                    const match = analysis.summary.match(pattern);
-                    if (match) {
-                        meetingDate = new Date(match[1], match[2] - 1, match[3]);
-                        meetingDate.setHours(10, 0, 0, 0);
-                        break;
-                    }
-                }
-
-                let summaryEnd = new Date(meetingDate);
-                summaryEnd.setHours(summaryEnd.getHours() + 1);
-                let summaryTitle = analysis.meeting_title || `📝 회의록 요약`;
-                // Check if header exists to avoid double adding
-                let metaHeader = `**참석자**: ${analysis.participants?.join(', ') || '미정'}\n**핵심 주제**: ${analysis.key_decisions?.join(', ') || '없음'}\n\n---\n\n`;
-                let desc = analysis.summary;
-                if (!desc.includes('**참석자**:')) {
-                    desc = metaHeader + desc;
-                }
-
-                calendar.addEvent({
-                    title: summaryTitle,
-                    start: meetingDate,
-                    end: summaryEnd,
-                    color: '#8B5CF6',
-                    classNames: ['event-type-summary'], // Filtering Class
-                    description: desc,
-                    extendedProps: { description: desc, isSummary: true, type: 'summary' }
-                });
-            }
-
-            // 2. 태스크 (Explicit Dates)
-            const tasks = analysis.todo_tasks || [];
-            if (tasks.length > 0) {
-                tasks.forEach((task) => {
-                    let eventStart;
-                    if (task.date && task.time) {
-                        eventStart = new Date(`${task.date}T${task.time}`);
-                    } else {
-                        // Fallback logic
-                        eventStart = new Date();
-                        if (task.date) {
-                            const datePart = new Date(task.date);
-                            eventStart = new Date(datePart);
-                            eventStart.setHours(9, 0, 0, 0);
-                        } else {
-                            eventStart.setDate(eventStart.getDate() + 1);
-                            eventStart.setHours(9, 0, 0, 0);
+                // 3. Meetings
+                finalData.schedule_items.forEach(m => {
+                    try {
+                        let start = new Date(`${m.date}T${m.time}`);
+                        if (isNaN(start.getTime())) {
+                            console.warn("Invalid date", m);
+                            return;
                         }
-                    }
-
-                    let eventEnd = new Date(eventStart);
-                    eventEnd.setHours(eventEnd.getHours() + 1);
-
-                    calendar.addEvent({
-                        title: `[T] ${task.title}`,
-                        start: eventStart,
-                        end: eventEnd,
-                        color: '#3B82F6',
-                        classNames: ['event-type-task'], // Filtering Class
-                        description: task.description,
-                        extendedProps: { description: task.description, type: 'task' }
-                    });
+                        let end = new Date(start.getTime() + 3600000);
+                        calendar.addEvent({
+                            id: generateId(),
+                            title: m.title,
+                            start: start, end: end,
+                            description: m.description,
+                            extendedProps: { description: m.description, isMeeting: true, sourceId: m.sourceId, sourceTitle: m.sourceTitle }
+                        });
+                    } catch (e) { console.error("Meeting add error", e); }
                 });
+
+                saveEventsToStorage();
+                document.getElementById('previewStage').classList.add('hidden');
+
+                const btn = document.querySelector('button[onclick="applyToCalendar()"]');
+                const orig = btn.innerHTML;
+                btn.innerHTML = "✅ Added!";
+                setTimeout(() => btn.innerHTML = orig, 2000);
+
+            } catch (e) {
+                alert('Error adding: ' + e.message);
+                console.error(e);
             }
-
-            // 3. 미팅
-            const schedules = analysis.schedule_items || [];
-            if (schedules.length > 0) {
-                schedules.forEach(item => {
-                    let start;
-                    if (item.date && item.time) {
-                        start = new Date(`${item.date}T${item.time}`);
-                    } else {
-                        start = new Date();
-                        if (item.date) {
-                            const datePart = new Date(item.date);
-                            start = new Date(datePart);
-                            start.setHours(10, 0, 0, 0);
-                        } else {
-                            start.setDate(start.getDate() + 1);
-                            start.setHours(10, 0, 0, 0);
-                        }
-                    }
-
-                    let end = new Date(start);
-                    end.setMinutes(end.getMinutes() + (item.duration_minutes || 60));
-
-                    calendar.addEvent({
-                        title: `[M] ${item.title}`,
-                        start: start,
-                        end: end,
-                        color: '#10B981',
-                        classNames: ['event-type-meeting'], // Filtering Class
-                        description: item.description,
-                        extendedProps: { description: item.description, type: 'meeting' }
-                    });
-                });
-            }
-
-            saveEventsToStorage();
-
-            // Re-apply filters after adding new events
-            Object.keys(activeFilters).forEach(type => {
-                if (!activeFilters[type]) {
-                    const wrapper = document.getElementById('calendar');
-                    wrapper.classList.add(`calendar-filtered-${type}`);
-                }
-            });
         }
 
-        // --- NEW: Filter Logic ---
-        const activeFilters = { summary: true, task: true, meeting: true };
 
-        function toggleFilter(type) {
-            const btn = document.getElementById(`filter-${type}`);
-
-            activeFilters[type] = !activeFilters[type];
-
-            // Toggle Button State
-            if (activeFilters[type]) {
-                btn.classList.remove('inactive');
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-                btn.classList.add('inactive');
-            }
-
-            // Toggle CSS Class on Calendar Container (to hide events)
-            const wrapper = document.getElementById('calendar');
-            if (activeFilters[type]) {
-                wrapper.classList.remove(`calendar-filtered-${type}`);
-            } else {
-                wrapper.classList.add(`calendar-filtered-${type}`);
-            }
-        }
     </script>
 </body>
 

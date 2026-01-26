@@ -27,7 +27,7 @@ if not env_path.exists():
 load_dotenv(env_path)
 
 from gemini_analyzer import GeminiAnalyzer
-from calcom_client import CalcomClient
+
 
 # 데이터 저장 경로 설정
 DATA_DIR = PROJECT_ROOT / "data"
@@ -105,18 +105,13 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-product
 
 # API 클라이언트 초기화
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-CALCOM_API_KEY = os.getenv('CALCOM_API_KEY')
-CALCOM_BASE_URL = os.getenv('CALCOM_BASE_URL', 'https://api.cal.com/v1')
-CALCOM_USER_ID = os.getenv('CALCOM_USER_ID')
-TIMEZONE = os.getenv('TIMEZONE', 'Asia/Seoul')
+
 
 if not GEMINI_API_KEY:
     print("⚠️  GEMINI_API_KEY가 설정되지 않았습니다.")
     print("   .env 파일을 확인해주세요.")
 
-if not CALCOM_API_KEY:
-    print("⚠️  CALCOM_API_KEY가 설정되지 않았습니다.")
-    print("   Cal.com에서 API 키를 발급받아 .env 파일에 설정해주세요.")
+
 
 
 @app.route('/')
@@ -151,17 +146,10 @@ def analyze():
         analyzer = GeminiAnalyzer(GEMINI_API_KEY)
         analysis_result = analyzer.analyze_meeting_notes(meeting_notes)
 
-        # Cal.com 동기화
-        sync_results = None
-        if auto_sync and CALCOM_API_KEY:
-            calcom = CalcomClient(CALCOM_API_KEY, CALCOM_BASE_URL, CALCOM_USER_ID, TIMEZONE)
-            sync_results = calcom.sync_meeting_analysis(analysis_result)
-
         return jsonify({
             'success': True,
             'analysis': analysis_result,
-            'sync_results': sync_results,
-            'auto_sync_enabled': auto_sync and bool(CALCOM_API_KEY)
+            'auto_sync_enabled': False
         })
 
     except Exception as e:
@@ -171,49 +159,7 @@ def analyze():
         }), 500
 
 
-@app.route('/sync', methods=['POST'])
-def sync_calcom():
-    """분석 결과를 Cal.com에 동기화 (수동)"""
-    
-    # API 키 확인
-    if not CALCOM_API_KEY:
-        return jsonify({
-            'success': False,
-            'error': 'CALCOM_API_KEY가 설정되지 않았습니다.'
-        }), 500
 
-    try:
-        data = request.json
-        if not data:
-            return jsonify({
-                'success': False,
-                'error': '데이터가 없습니다.'
-            }), 400
-            
-        calcom = CalcomClient(CALCOM_API_KEY, CALCOM_BASE_URL, CALCOM_USER_ID, TIMEZONE)
-        
-        # 캘린더 이벤트 직접 동기화 (프론트엔드에서 확정된 일정)
-        if 'calendar_events' in data:
-            sync_results = calcom.sync_calendar_events(data['calendar_events'])
-        # 기존 분석 결과 동기화 (하위 호환성)
-        elif 'analysis_result' in data:
-            sync_results = calcom.sync_meeting_analysis(data['analysis_result'])
-        else:
-            return jsonify({
-                'success': False,
-                'error': '동기화할 데이터가 없습니다 (calendar_events 또는 analysis_result 필요).'
-            }), 400
-        
-        return jsonify({
-            'success': True,
-            'sync_results': sync_results
-        })
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
 
 
 @app.route('/health')
@@ -222,7 +168,7 @@ def health():
     status = {
         'status': 'ok',
         'gemini_configured': bool(GEMINI_API_KEY),
-        'calcom_configured': bool(CALCOM_API_KEY),
+        'calcom_configured': False,
     }
     return jsonify(status)
 
@@ -253,29 +199,7 @@ def test_gemini():
         }), 500
 
 
-@app.route('/api/test-calcom', methods=['POST'])
-def test_calcom():
-    """Cal.com API 테스트"""
-    if not CALCOM_API_KEY:
-        return jsonify({
-            'success': False,
-            'error': 'CALCOM_API_KEY가 설정되지 않았습니다.'
-        }), 500
 
-    try:
-        calcom = CalcomClient(CALCOM_API_KEY, CALCOM_BASE_URL, CALCOM_USER_ID, TIMEZONE)
-        event_types = calcom.get_event_types()
-
-        return jsonify({
-            'success': True,
-            'message': 'Cal.com API 연결 성공!',
-            'event_types': event_types
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
 
 @app.route('/api/db', methods=['GET', 'POST'])
 def handle_db():
@@ -327,7 +251,7 @@ if __name__ == '__main__':
     print("=" * 60)
     print(f"📍 URL: http://localhost:{port}")
     print(f"🔑 Gemini API: {'✅ 설정됨' if GEMINI_API_KEY else '❌ 미설정'}")
-    print(f"📅 Cal.com API: {'✅ 설정됨' if CALCOM_API_KEY else '❌ 미설정'}")
+
     print("=" * 60 + "\n")
 
     app.run(host='0.0.0.0', port=port, debug=debug)

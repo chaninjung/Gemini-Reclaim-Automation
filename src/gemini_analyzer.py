@@ -6,6 +6,7 @@ Google Gemini API를 사용한 회의록 분석 모듈
 import os
 import json
 from typing import Dict, List, Any
+from datetime import datetime
 import google.generativeai as genai
 
 
@@ -66,7 +67,9 @@ class GeminiAnalyzer:
 
 다음 형식의 JSON으로 응답해주세요:
 {{
-    "meeting_title": "AI가 제안하는 회의록 제목 (예: 2026-01-16 AI 개발팀 주간 회의)",
+    "meeting_title": "회의 제목을 다음 형식으로 생성: '회의주제/부서명/YY-MM-DD' (예: 'AI요청사항/건축사업부/26-01-23', 'AI 개발 협의/조경부/26-01-16'). 회의 날짜는 회의록에서 추출하거나 없으면 오늘 날짜를 사용하세요.",
+    "meeting_date": "회의록에서 추출한 실제 회의 날짜 (YYYY-MM-DD 형식). 회의록에 명시된 날짜를 사용하고, 없으면 오늘 날짜를 사용하세요.",
+    "department_name": "회의에 참석한 주요 부서명 (예: '건축사업부', '조경부', '상하수도1부' 등). 회의록에서 추출하세요.",
     "summary": "위 요구사항에 맞춘 마크다운 형식의 상세 요약 텍스트",
     "completed_tasks": [
         {{
@@ -77,7 +80,7 @@ class GeminiAnalyzer:
     ],
     "todo_tasks": [
         {{
-            "title": "해야 할 작업 제목",
+            "title": "작업 제목 (부서명을 앞에 붙여서 작성. 예: '건축사업부 법규 검토 체크리스트 제공', '조경부 핵심 법률 리스트 제공')",
             "description": "작업 상세 설명",
             "priority": "high/medium/low",
             "who": "담당자 (있으면)",
@@ -87,7 +90,7 @@ class GeminiAnalyzer:
     ],
     "schedule_items": [
         {{
-            "title": "일정 제목",
+            "title": "일정 제목 (부서명을 앞에 붙여서 작성. 예: '건축사업부 MCP 환경 구축 지원', '철도2부 법령 리스트 제출')",
             "description": "일정 설명",
             "date": "날짜 (있으면, YYYY-MM-DD 형식)",
             "time": "시간 (있으면, HH:MM 형식)",
@@ -110,6 +113,12 @@ class GeminiAnalyzer:
 2. 정보가 없으면 빈 배열 []을 반환하세요
 3. 날짜 형식은 반드시 YYYY-MM-DD를 따르세요
 4. 시간 형식은 24시간 형식 HH:MM을 사용하세요
+5. **상대적 날짜 표현을 구체적인 날짜로 변환하세요**:
+   - "1월 말까지" → 해당 월의 마지막 날 (예: 2026-01-31)
+   - "다음주 중반" → 다음주 수요일 날짜
+   - "금요일까지" → 다음 금요일 날짜
+   - "~일 후" → 회의 날짜 기준 계산
+   - 오늘 날짜는 {datetime.now().strftime('%Y-%m-%d')}입니다. 이를 기준으로 계산하세요.
 """
 
         try:
