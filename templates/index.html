@@ -384,11 +384,10 @@
             font-size: 0.75em;
             letter-spacing: 0.05em;
         }
-    </style>
 
-    .filter-btn.inactive span {
-    background-color: #d1d5db;
-    }
+        .filter-btn.inactive span {
+            background-color: #d1d5db;
+        }
     </style>
 
     <!-- Context Menu -->
@@ -1114,6 +1113,21 @@
             // Render Description (Markdown support)
             let desc = props.description || '';
 
+            // Helper to safe parse markdown
+            const safeParse = (text) => {
+                try {
+                    if (typeof marked !== 'undefined') {
+                        if (typeof marked.parse === 'function') return marked.parse(text);
+                        if (typeof marked === 'function') return marked(text);
+                    }
+                    console.warn('marked library not found, falling back to plain text');
+                    return text.replace(/\n/g, '<br>');
+                } catch (e) {
+                    console.error('Markdown parsing error:', e);
+                    return text.replace(/\n/g, '<br>');
+                }
+            };
+
             // Handle [Context] formatting logic
             if (desc.includes('[Context]')) {
                 const parts = desc.split('[Context]');
@@ -1121,20 +1135,20 @@
                 let contextContent = parts[1] ? parts[1].trim() : '';
 
                 if (contextContent) {
-                    mainContent = (typeof marked !== 'undefined') ? marked.parse(mainContent) : mainContent.replace(/\n/g, '<br>');
+                    const parsedMain = safeParse(mainContent);
                     desc = `
-                        <div>${mainContent}</div>
+                        <div>${parsedMain}</div>
                         <div class="context-block">
                             <span class="context-label">📌 관련 문맥 (Context)</span>
                             <div class="text-gray-600">${contextContent}</div>
                         </div>
                      `;
                 } else {
-                    desc = (typeof marked !== 'undefined') ? marked.parse(desc) : desc.replace(/\n/g, '<br>');
+                    desc = safeParse(desc);
                 }
                 document.getElementById('viewEventDesc').innerHTML = desc;
             } else {
-                document.getElementById('viewEventDesc').innerHTML = (typeof marked !== 'undefined') ? marked.parse(desc) : desc.replace(/\n/g, '<br>');
+                document.getElementById('viewEventDesc').innerHTML = safeParse(desc);
             }
 
             document.getElementById('viewModal').classList.remove('hidden');
