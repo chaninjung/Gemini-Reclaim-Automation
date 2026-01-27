@@ -2,38 +2,65 @@
   "events": [
     {
       "id": "example_summary_1",
-      "title": "프로젝트 킥오프 미팅/개발팀/26-01-15",
-      "start": "2026-01-15T09:00:00",
+      "title": "Smart Scheduler v3 기획 회의/개발팀/26-01-27",
+      "start": "2026-01-27T09:00:00",
       "allDay": true,
-      "description": "# 회의 요약\n\n## 핵심 요약\n- 새로운 프로젝트 시작\n- 팀 구성 완료\n- 일정 확정\n\n## 주요 논의 사항\n1. 프로젝트 범위 정의\n2. 역할 분담\n3. 마일스톤 설정\n\n## 액션 아이템\n- [ ] 요구사항 문서 작성\n- [ ] 기술 스택 선정",
+      "description": "# 회의 요약\n\n## 핵심 요약\n- v3.0 기능 명세 확정\n- 태스크 상태 관리 (Todo -> Done -> Verified) 도입\n- UI 테마 개선 (Zinc 스타일)\n\n## 주요 논의 사항\n1. 상태 관리 프로세스 정립\n2. 디자인 시스템 통합 방안\n\n## 액션 아이템\n- [x] DB 스키마 변경\n- [ ] UI 컴포넌트 개발",
       "extendedProps": {
-        "description": "# 회의 요약\n\n## 핵심 요약\n- 새로운 프로젝트 시작\n- 팀 구성 완료\n- 일정 확정",
+        "description": "# 회의 요약\n\n## 핵심 요약\n- v3.0 기능 명세 확정\n- 태스크 상태 관리 (Todo -> Done -> Verified) 도입\n- UI 테마 개선 (Zinc 스타일)",
         "isSummary": true,
-        "sourceId": "batch_example_1"
+        "sourceId": "batch_v3_kickoff"
       }
     },
     {
-      "id": "example_task_1",
-      "title": "개발팀 요구사항 문서 작성",
-      "start": "2026-01-20T10:00:00",
-      "end": "2026-01-20T12:00:00",
-      "description": "프로젝트 요구사항 문서 초안 작성",
+      "id": "example_task_todo",
+      "title": "DB 스키마 마이그레이션 스크립트 작성",
+      "start": "2026-01-27T10:00:00",
+      "end": "2026-01-27T12:00:00",
+      "description": "기존 데이터 마이그레이션을 위한 스크립트 작성 및 테스트",
       "extendedProps": {
-        "description": "프로젝트 요구사항 문서 초안 작성",
+        "description": "기존 데이터 마이그레이션을 위한 스크립트 작성 및 테스트",
         "isTask": true,
-        "sourceId": "batch_example_1"
+        "status": "todo",
+        "sourceId": "batch_v3_kickoff"
+      }
+    },
+    {
+      "id": "example_task_done",
+      "title": "상태 관리 UI 프로토타입 제작",
+      "start": "2026-01-27T13:00:00",
+      "end": "2026-01-27T15:00:00",
+      "description": "Figma를 사용한 상태 관리 UI 시안 제작 (완료됨)",
+      "extendedProps": {
+        "description": "Figma를 사용한 상태 관리 UI 시안 제작 (완료됨)",
+        "isTask": true,
+        "status": "done",
+        "sourceId": "batch_v3_kickoff"
+      }
+    },
+    {
+      "id": "example_task_verified",
+      "title": "기획안 내부 리뷰 및 승인",
+      "start": "2026-01-27T16:00:00",
+      "end": "2026-01-27T17:00:00",
+      "description": "팀장님 기획안 최종 승인 완료",
+      "extendedProps": {
+        "description": "팀장님 기획안 최종 승인 완료",
+        "isTask": true,
+        "status": "verified",
+        "sourceId": "batch_v3_kickoff"
       }
     },
     {
       "id": "example_meeting_1",
-      "title": "개발팀 주간 회의",
-      "start": "2026-01-22T14:00:00",
-      "end": "2026-01-22T15:00:00",
-      "description": "주간 진행 상황 공유 및 이슈 논의",
+      "title": "주간 개발 미팅",
+      "start": "2026-01-28T14:00:00",
+      "end": "2026-01-28T15:00:00",
+      "description": "진행 상황 공유 및 이슈 트래킹",
       "extendedProps": {
-        "description": "주간 진행 상황 공유 및 이슈 논의",
+        "description": "진행 상황 공유 및 이슈 트래킹",
         "isMeeting": true,
-        "sourceId": "batch_example_1"
+        "sourceId": "batch_v3_kickoff"
       }
     }
   ]

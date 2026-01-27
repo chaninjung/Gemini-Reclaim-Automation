@@ -187,6 +187,25 @@
             border-left: 3px solid #22c55e !important;
         }
 
+        /* Status Styles */
+        .status-done {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .status-verified {
+            border: 2px solid #fbbf24 !important;
+            /* Amber-400 */
+        }
+
+        .status-verified .fc-event-title::after {
+            content: '✓';
+            color: #d97706;
+            /* Amber-600 */
+            margin-left: 4px;
+            font-weight: 800;
+        }
+
         /* Ensure text color cascades to inner elements */
         .event-type-meeting .fc-event-main,
         .event-type-task .fc-event-main,
@@ -487,7 +506,17 @@
     </main>
 
     <!-- Context Menu (Zinc Style) -->
-    <div id="contextMenu" class="bg-white rounded-md shadow-lg border border-zinc-200 py-1 w-32 z-50 hidden">
+    <div id="contextMenu" class="bg-white rounded-md shadow-lg border border-zinc-200 py-1 w-40 z-50 hidden">
+        <button onclick="onClickContextStatus('done')" id="ctxStatusDone"
+            class="block w-full text-left px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 transition-colors">Mark
+            as Done</button>
+        <button onclick="onClickContextStatus('verified')" id="ctxStatusVerified"
+            class="block w-full text-left px-3 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors">Mark
+            as Verified</button>
+        <button onclick="onClickContextStatus('todo')" id="ctxStatusTodo"
+            class="block w-full text-left px-3 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-100 transition-colors">Reset
+            to Todo</button>
+        <div class="h-px bg-zinc-200 my-1"></div>
         <button onclick="onClickContextEdit()"
             class="block w-full text-left px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 transition-colors">Edit</button>
         <button onclick="onClickContextDelete()"
@@ -720,6 +749,10 @@
                     const cat = arg.event.extendedProps.category || 'ai_req';
                     classes.push('cat-' + cat);
 
+                    // Status Classes
+                    const status = arg.event.extendedProps.status || 'todo';
+                    classes.push('status-' + status);
+
                     return classes;
                 },
                 eventDidMount: function (info) {
@@ -829,6 +862,13 @@
             const menu = document.getElementById('contextMenu');
             menu.classList.add('hidden');
             menu.style.display = 'none';
+        }
+        function onClickContextStatus(newStatus) {
+            if (contextEvent) {
+                contextEvent.setExtendedProp('status', newStatus);
+                saveEventsToStorage();
+            }
+            hideContextMenu();
         }
         function onClickContextEdit() { if (contextEvent) openEditModal(contextEvent); hideContextMenu(); }
         function onClickContextDelete() {
@@ -1013,6 +1053,7 @@
                 isTask: newType === 'task',
                 isSummary: newType === 'summary',
                 category: newCategory,
+                status: 'todo',
                 sourceId: document.getElementById('editEventSourceId').value || undefined
             };
 
@@ -1355,7 +1396,7 @@
                             title: t.title,
                             start: start, end: end,
                             description: t.description,
-                            extendedProps: { description: t.description, isTask: true, sourceId: t.sourceId, sourceTitle: t.sourceTitle }
+                            extendedProps: { description: t.description, isTask: true, status: 'todo', sourceId: t.sourceId, sourceTitle: t.sourceTitle }
                         });
                     } catch (e) { console.error("Task add error", e); }
                 });
