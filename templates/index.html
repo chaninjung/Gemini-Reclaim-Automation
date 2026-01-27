@@ -367,6 +367,11 @@
                 transform: translateY(0);
             }
         }
+
+        /* Tooltip Pointer Events Fix */
+        .tippy-box {
+            pointer-events: none !important;
+        }
     </style>
 </head>
 
@@ -473,14 +478,33 @@
                     <div class="flex items-center gap-1">
                         <button onclick="toggleCategory('ai_req')" id="cat-ai_req"
                             class="cat-btn active px-2 py-0.5 text-[11px] font-bold rounded-full border border-zinc-200 transition-all text-zinc-600 bg-zinc-50 hover:bg-zinc-100 data-[state=inactive]:opacity-50 data-[state=inactive]:line-through">AI
-                            요청사항</button>
+                            Request</button>
                         <button onclick="toggleCategory('dev_prog')" id="cat-dev_prog"
-                            class="cat-btn active px-2 py-0.5 text-[11px] font-bold rounded-full border border-zinc-200 transition-all text-zinc-600 bg-zinc-50 hover:bg-zinc-100 data-[state=inactive]:opacity-50 data-[state=inactive]:line-through">개발
-                            진행상황</button>
+                            class="cat-btn active px-2 py-0.5 text-[11px] font-bold rounded-full border border-zinc-200 transition-all text-zinc-600 bg-zinc-50 hover:bg-zinc-100 data-[state=inactive]:opacity-50 data-[state=inactive]:line-through">Development</button>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <!-- Undo/Redo Buttons -->
+                    <div class="flex items-center gap-1 mr-2 border-r border-zinc-200 pr-3">
+                        <button onclick="undo()" id="btnUndo" disabled
+                            class="p-1.5 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors disabled:opacity-30"
+                            title="Undo (Ctrl+Z)">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                            </svg>
+                        </button>
+                        <button onclick="redo()" id="btnRedo" disabled
+                            class="p-1.5 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors disabled:opacity-30"
+                            title="Redo (Ctrl+Y)">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path>
+                            </svg>
+                        </button>
+                    </div>
+
                     <!-- Clean Filters (Capsule Style with Dots) -->
                     <div class="flex items-center gap-1">
                         <button onclick="toggleFilter('summary')" id="filter-summary"
@@ -578,8 +602,8 @@
                             class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Category</label>
                         <select id="editEventCategory"
                             class="w-full text-sm font-medium border border-zinc-200 rounded-md px-3 py-2 bg-white outline-none focus:border-zinc-400 text-zinc-900 cursor-pointer">
-                            <option value="ai_req">AI 요청사항</option>
-                            <option value="dev_prog">개발 진행상황</option>
+                            <option value="ai_req">AI Request</option>
+                            <option value="dev_prog">Development</option>
                         </select>
                     </div>
                     <div>
@@ -679,6 +703,148 @@
 
         let fullscreenEditorSourceId = null;
 
+
+
+        // --- Undo/Redo System ---
+        const historyStack = [];
+        const redoStack = [];
+        const MAX_HISTORY = 50;
+        let isUndoRedoAction = false; // Flag to prevent pushing history during undo/redo
+
+        function pushHistory() {
+            if (isUndoRedoAction) return;
+
+            // Snapshot current events
+            const snapshot = calendar.getEvents().map(e => {
+                return {
+                    id: e.id,
+                    title: e.title,
+                    start: e.startStr,
+                    end: e.endStr,
+                    allDay: e.allDay,
+                    extendedProps: { ...e.extendedProps }
+                };
+            });
+
+            historyStack.push(snapshot);
+            if (historyStack.length > MAX_HISTORY) historyStack.shift();
+
+            // Clear redo stack on new action
+            redoStack.length = 0;
+            updateUndoRedoUI();
+        }
+
+        function restoreSnapshot(snapshot) {
+            isUndoRedoAction = true;
+            calendar.removeAllEvents();
+            snapshot.forEach(eventData => {
+                calendar.addEvent(eventData);
+            });
+            // Persist to storage without pushing history again
+            const events = calendar.getEvents().map(e => {
+                return {
+                    id: e.id,
+                    title: e.title,
+                    start: e.start ? e.start.toISOString() : null,
+                    end: e.end ? e.end.toISOString() : null,
+                    allDay: e.allDay,
+                    description: e.extendedProps.description,
+                    extendedProps: e.extendedProps
+                };
+            });
+            saveToLocalStorageAPI(events); // Helper function needed or direct save
+            isUndoRedoAction = false;
+        }
+
+        // Separate save function that doesn't push history (for undo/redo internal use)
+        function saveToLocalStorageAPI(events) {
+            fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ events: events })
+            }).catch(err => console.error("Auto-save failed", err));
+        }
+
+        function undo() {
+            if (historyStack.length === 0) return;
+
+            // Save current state to redo stack before undoing
+            const currentSnapshot = calendar.getEvents().map(e => ({
+                id: e.id,
+                title: e.title,
+                start: e.startStr,
+                end: e.endStr,
+                allDay: e.allDay,
+                extendedProps: { ...e.extendedProps }
+            }));
+            redoStack.push(currentSnapshot);
+
+            const previousSnapshot = historyStack.pop();
+            restoreSnapshot(previousSnapshot);
+            updateUndoRedoUI();
+            showToast("Undo Successful");
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+
+            // Save current state to history stack before redoing
+            const currentSnapshot = calendar.getEvents().map(e => ({
+                id: e.id,
+                title: e.title,
+                start: e.startStr,
+                end: e.endStr,
+                allDay: e.allDay,
+                extendedProps: { ...e.extendedProps }
+            }));
+            historyStack.push(currentSnapshot);
+
+            const nextSnapshot = redoStack.pop();
+            restoreSnapshot(nextSnapshot);
+            updateUndoRedoUI();
+            showToast("Redo Successful");
+        }
+
+        function updateUndoRedoUI() {
+            const btnUndo = document.getElementById('btnUndo');
+            const btnRedo = document.getElementById('btnRedo');
+
+            if (btnUndo) {
+                btnUndo.disabled = historyStack.length === 0;
+                btnUndo.classList.toggle('text-zinc-900', historyStack.length > 0);
+                btnUndo.classList.toggle('text-zinc-400', historyStack.length === 0);
+            }
+            if (btnRedo) {
+                btnRedo.disabled = redoStack.length === 0;
+                btnRedo.classList.toggle('text-zinc-900', redoStack.length > 0);
+                btnRedo.classList.toggle('text-zinc-400', redoStack.length === 0);
+            }
+        }
+
+        function showToast(message) {
+            // Simple toast implementation
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-zinc-800 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg z-50 fade-in';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) redo();
+                else undo();
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        });
+
         function openFullscreenEditor(sourceId) {
             fullscreenEditorSourceId = sourceId;
             const sourceElement = document.getElementById(sourceId);
@@ -735,7 +901,15 @@
                 droppable: true,
                 selectable: true,
                 dateClick: function (info) {
-                    openCreateModal(info.dateStr);
+                    if (window.clickTimer) {
+                        clearTimeout(window.clickTimer);
+                        window.clickTimer = null;
+                        openCreateModal(info.dateStr);
+                    } else {
+                        window.clickTimer = setTimeout(() => {
+                            window.clickTimer = null;
+                        }, 250);
+                    }
                 },
                 events: [],
                 eventClassNames: function (arg) {
@@ -756,21 +930,30 @@
                     return classes;
                 },
                 eventDidMount: function (info) {
-                    info.el.addEventListener('contextmenu', function (e) {
+                    // Direct handler - strongest way to prevent default
+                    info.el.oncontextmenu = function (e) {
                         e.preventDefault();
+                        e.stopPropagation();
                         showContextMenu(e, info.event);
-                    });
+                        return false;
+                    };
 
                     tippy(info.el, {
                         content: `<div class="text-xs font-sans text-zinc-100">${info.event.title}</div>`,
                         theme: 'translucent',
+                        allowHTML: true,
                     });
+                },
+                eventDragStart: function (info) {
+                    pushHistory();
+                },
+                eventResizeStart: function (info) {
+                    pushHistory();
                 },
                 eventDrop: function () { saveEventsToStorage(); },
                 eventResize: function () { saveEventsToStorage(); },
                 eventClick: function (info) { showReadOnlyModal(info); }
             });
-            calendar.render();
             calendar.render();
 
             // Resizer Logic
@@ -865,6 +1048,7 @@
         }
         function onClickContextStatus(newStatus) {
             if (contextEvent) {
+                pushHistory(); // Save state before status change
                 contextEvent.setExtendedProp('status', newStatus);
                 saveEventsToStorage();
             }
@@ -873,6 +1057,7 @@
         function onClickContextEdit() { if (contextEvent) openEditModal(contextEvent); hideContextMenu(); }
         function onClickContextDelete() {
             if (contextEvent && confirm('Delete this event?')) {
+                pushHistory(); // Save state before delete
                 contextEvent.remove();
                 saveEventsToStorage();
                 checkSyncButtonState();
@@ -1038,6 +1223,7 @@
         }
 
         function saveEventChanges() {
+            pushHistory(); // Save state before changes
             const newTitle = document.getElementById('editEventTitle').value;
             const newDesc = editor.getMarkdown();
             const newStart = new Date(document.getElementById('editEventStart').value);
@@ -1092,6 +1278,7 @@
 
         function deleteEvent() {
             if (activeEvent && confirm('Delete this event?')) {
+                pushHistory(); // Save state before delete
                 activeEvent.remove();
                 saveEventsToStorage();
                 checkSyncButtonState();
@@ -1233,10 +1420,16 @@
                                                 class="w-full text-sm bg-white border border-zinc-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-200 text-zinc-900 font-medium">
                                         </div>
                                         
-                                        <div class="mb-3">
-                                            <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Date</label>
                                             <input type="date" id="editSummaryDate" value="${analysis.meeting_date || new Date().toISOString().slice(0, 10)}" 
                                                 class="w-full text-sm bg-white border border-zinc-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-200 text-zinc-700 font-mono">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="block text-xs font-semibold text-zinc-500 mb-1.5 uppercase tracking-wide">Category</label>
+                                            <select id="batchCategory" class="w-full text-sm bg-white border border-zinc-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-200 text-zinc-700 font-medium">
+                                                <option value="ai_req">AI Request</option>
+                                                <option value="dev_prog">Development</option>
+                                            </select>
                                         </div>
                                         
                                         <div>
@@ -1317,10 +1510,12 @@
 
         function applyToCalendar() {
             if (!tempAnalysisResult) return;
+            pushHistory(); // Save state before batch add
 
             const finalData = { ...tempAnalysisResult };
             const batchId = Date.now().toString(36) + Math.random().toString(36).substr(2);
             const meetingTitle = document.getElementById('editSummaryTitle')?.value || tempAnalysisResult.meeting_title || 'Meeting Summary';
+            const batchCategory = document.getElementById('batchCategory')?.value || 'ai_req';
 
             // Summary
             const summaryCheck = document.getElementById('checkSummary');
@@ -1382,7 +1577,7 @@
                         start: d,
                         allDay: true,
                         description: finalData.summary,
-                        extendedProps: { description: finalData.summary, isSummary: true, sourceId: batchId }
+                        extendedProps: { description: finalData.summary, isSummary: true, category: batchCategory, sourceId: batchId }
                     });
                 }
                 // 2. Tasks
@@ -1396,7 +1591,7 @@
                             title: t.title,
                             start: start, end: end,
                             description: t.description,
-                            extendedProps: { description: t.description, isTask: true, status: 'todo', sourceId: t.sourceId, sourceTitle: t.sourceTitle }
+                            extendedProps: { description: t.description, isTask: true, status: 'todo', category: batchCategory, sourceId: t.sourceId, sourceTitle: t.sourceTitle }
                         });
                     } catch (e) { console.error("Task add error", e); }
                 });
@@ -1414,7 +1609,7 @@
                             title: m.title,
                             start: start, end: end,
                             description: m.description,
-                            extendedProps: { description: m.description, isMeeting: true, sourceId: m.sourceId, sourceTitle: m.sourceTitle }
+                            extendedProps: { description: m.description, isMeeting: true, category: batchCategory, sourceId: m.sourceId, sourceTitle: m.sourceTitle }
                         });
                     } catch (e) { console.error("Meeting add error", e); }
                 });
